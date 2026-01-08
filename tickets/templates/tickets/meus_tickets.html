@@ -1,0 +1,36 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div><h2 class="fw-bold mb-1">Minhas Solicitações</h2><p class="text-muted mb-0">Gerencie seus pedidos</p></div>
+    <a href="{% url 'abrir_chamado' %}" class="btn btn-primary-4c shadow-sm"><i class="bi bi-plus-lg me-2"></i>Novo</a>
+</div>
+<div class="card-custom overflow-hidden">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light"><tr><th class="py-3 ps-4">ID</th><th>Assunto</th><th>Status</th><th>Data</th><th class="text-end pe-4">Ações</th></tr></thead>
+        <tbody>
+            {% for c in chamados %}
+            <tr>
+                <td class="ps-4 fw-bold text-primary" onclick="location.href='{% url 'ver_ticket' c.id_chamado %}'" style="cursor:pointer">#{{ c.id_chamado }}</td>
+                <td onclick="location.href='{% url 'ver_ticket' c.id_chamado %}'" style="cursor:pointer">
+                    <div class="fw-bold text-dark">{{ c.titulo }}</div>
+                    <div class="d-flex align-items-center gap-2 mt-1"><span class="badge bg-light text-secondary border fw-normal">{{ c.setor_destino.nome }}</span></div>
+                </td>
+                <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ c.status }}</span></td>
+                <td class="text-muted small">{{ c.data_abertura|date:"d M, H:i" }}</td>
+                <td class="text-end pe-4">
+                    {% if c.is_editable %}
+                        <div class="btn-group">
+                            <a href="{% url 'editar_chamado' c.id_chamado %}" class="btn btn-sm btn-white border text-secondary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                            <button type="button" class="btn btn-sm btn-white border text-danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ c.id_chamado }}" title="Cancelar"><i class="bi bi-trash-fill"></i></button>
+                        </div>
+                        <div class="modal fade text-start" id="cancelModal{{ c.id_chamado }}" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content"><div class="modal-header border-0"><h6 class="modal-title fw-bold">Cancelar?</h6></div><div class="modal-body text-muted small">Ação irreversível.</div><div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Voltar</button><form action="{% url 'cancelar_chamado' c.id_chamado %}" method="post" style="display:inline;"><button type="submit" class="btn btn-sm btn-danger">Sim, Cancelar</button>{% csrf_token %}</form></div></div></div></div>
+                    {% else %}
+                        <span class="text-muted small opacity-50"><i class="bi bi-lock-fill"></i> Bloqueado</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}<tr><td colspan="5" class="text-center py-5">Nenhum chamado encontrado.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

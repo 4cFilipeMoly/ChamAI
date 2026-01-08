@@ -1,0 +1,4 @@
+<option value="">Selecione a área específica...</option>
+{% for sub in subsetores %}
+<option value="{{ sub.id }}">{{ sub.nome }}</option>
+{% endfor %}

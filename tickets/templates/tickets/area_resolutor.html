@@ -1,0 +1,160 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Área do Resolutor</h2>
+        <p class="text-muted">Gerencie a fila de atendimento do setor <strong>{{ request.user.colaborador.setor.nome }}</strong>.</p>
+    </div>
+    <div class="d-flex gap-3 text-center">
+        <div class="bg-white p-2 rounded border">
+            <span class="d-block fw-bold fs-4">{{ stats.fila }}</span>
+            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Na Fila</small>
+        </div>
+        <div class="bg-white p-2 rounded border">
+            <span class="d-block fw-bold fs-4 text-primary">{{ stats.meus_prod }}</span>
+            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Em Produção</small>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="resolutorTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#fila">
+            <i class="bi bi-inbox-fill me-2"></i>Triagem Pendente
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#producao">
+            <i class="bi bi-tools me-2"></i>Em Atendimento (Meus)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    
+    <div class="tab-pane fade show active" id="fila">
+        <div class="card-custom p-0 overflow-hidden">
+            {% if fila %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light small text-uppercase text-muted">
+                        <tr>
+                            <th class="px-4">#ID</th>
+                            <th>Prioridade</th>
+                            <th>Categoria / Título</th>
+                            <th>Solicitante</th>
+                            <th>Prazo 1ª Resp.</th>
+                            <th class="text-end px-4">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in fila %}
+                        <tr class="{% if t.flag_editado %}bg-warning bg-opacity-10{% endif %}">
+                            <td class="px-4 fw-bold text-muted">#{{ t.id_chamado }}</td>
+                            <td>
+                                {% if t.flash %}
+                                    <span class="badge bg-danger"><i class="bi bi-lightning-fill"></i> FLASH</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">Normal</span>
+                                {% endif %}
+                                
+                                {% if t.flag_editado %}
+                                    <span class="badge bg-warning text-dark ms-1" title="Solicitante alterou o chamado recentemente">
+                                        <i class="bi bi-pencil-fill"></i> Editado
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if t.categoria in request.user.colaborador.categorias_atribuidas.all %}
+                                        <i class="bi bi-bullseye text-primary" title="Sua Especialidade (Match de Categoria)" style="font-size: 1.2rem;"></i>
+                                    {% endif %}
+                                    
+                                    <div>
+                                        <span class="d-block fw-bold text-dark">{{ t.categoria.nome|default:"-- Sem Categoria --" }}</span>
+                                        <small class="text-muted">{{ t.titulo|truncatechars:40 }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-small bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                        {{ t.solicitante.nome|slice:":2" }}
+                                    </div>
+                                    <span class="small">{{ t.solicitante.nome }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if t.estourou_primeira_resposta %}
+                                    <span class="text-danger fw-bold small">
+                                        <i class="bi bi-exclamation-circle-fill"></i> Atrasado
+                                    </span>
+                                {% else %}
+                                    <span class="text-success small">
+                                        {{ t.prazo_resposta_inicial|date:"H:i" }}
+                                    </span>
+                                {% endif %}
+                                <div class="text-muted" style="font-size: 0.7rem;">{{ t.prazo_resposta_inicial|date:"d/m/Y" }}</div>
+                            </td>
+                            <td class="text-end px-4">
+                                <a href="{% url 'triagem_ticket' t.id_chamado %}" class="btn btn-sm btn-primary-4c fw-bold">
+                                    Triar <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="bi bi-check2-circle display-4 mb-3 opacity-25"></i>
+                <h5>Fila zerada!</h5>
+                <p>Nenhum chamado pendente para seu setor no momento.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="producao">
+        <div class="row g-3">
+            {% for t in producao %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card-custom p-3 h-100 border-start border-4 {% if t.esta_vencido %}border-danger{% elif t.status == 'Stand By' %}border-warning{% else %}border-primary{% endif %}">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-light text-dark border">#{{ t.id_chamado }}</span>
+                        
+                        {% if t.status == 'Stand By' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-pause-circle"></i> Pausado</span>
+                        {% elif t.esta_vencido %}
+                            <span class="badge bg-danger"><i class="bi bi-alarm"></i> Vencido</span>
+                        {% else %}
+                            <span class="badge bg-success"><i class="bi bi-clock"></i> No Prazo</span>
+                        {% endif %}
+                    </div>
+                    
+                    <h6 class="fw-bold text-truncate mb-1" title="{{ t.titulo }}">{{ t.titulo }}</h6>
+                    <small class="text-muted d-block mb-3">{{ t.categoria.nome }}</small>
+                    
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                        <div class="small">
+                            <span class="text-muted d-block" style="font-size: 0.7rem;">Prazo SLA</span>
+                            <strong>{{ t.sla_prazo|date:"d/m H:i" }}</strong>
+                        </div>
+                        <a href="{% url 'ver_ticket' t.id_chamado %}" class="btn btn-sm btn-outline-primary">
+                            Acessar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5 text-muted">
+                <p>Você não tem chamados em andamento.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

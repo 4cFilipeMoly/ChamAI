@@ -1,0 +1,76 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-custom p-4 mb-4 text-center">
+            <div class="d-flex justify-content-center mb-3">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                     style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
+                    {{ colab.nome|slice:":1" }}
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1">{{ colab.nome }}</h3>
+            <p class="text-muted">{{ colab.user.email }}</p>
+            
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <span class="badge bg-dark text-white px-3 py-2 rounded-pill">
+                    <i class="bi bi-building"></i> {{ colab.setor.nome }}
+                </span>
+                {% if colab.subsetor %}
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                    {{ colab.subsetor.nome }}
+                </span>
+                {% endif %}
+                {% if colab.is_manager %}
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                    <i class="bi bi-star-fill"></i> Head
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card-custom p-4 h-100">
+                    <h6 class="fw-bold text-uppercase text-muted mb-3">Minha Atividade</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Chamados Abertos</span>
+                        <span class="fw-bold">{{ stats.abertos }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Chamados Resolvidos</span>
+                        <span class="fw-bold text-success">{{ stats.resolvidos }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card-custom p-4 h-100">
+                    <h6 class="fw-bold text-uppercase text-muted mb-3">Minhas Atribuições</h6>
+                    
+                    {% if colab.is_resolutor %}
+                        <div class="alert alert-info border-0 py-2 small mb-3">
+                            <i class="bi bi-info-circle me-1"></i> Você é um resolutor técnico.
+                        </div>
+                        <ul class="list-unstyled mb-0" style="max-height: 150px; overflow-y: auto;">
+                            {% for cat in colab.categorias_atribuidas.all %}
+                            <li class="mb-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill text-success small"></i>
+                                <span class="small">{{ cat.nome }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-person mb-2 d-block fs-4"></i>
+                            <p class="small mb-0">Você tem perfil de <strong>Solicitante</strong>.</p>
+                            <p class="small opacity-75">Não há categorias técnicas atribuídas a você.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

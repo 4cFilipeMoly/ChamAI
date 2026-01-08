@@ -1,0 +1,199 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-5 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Visão Geral</h2>
+        <p class="text-muted mb-0">Monitoramento e indicadores em tempo real</p>
+    </div>
+    
+    <form method="get" class="d-flex flex-wrap gap-2 bg-white p-2 rounded-4 shadow-sm border align-items-center">
+        <div class="position-relative">
+            <select name="setor" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 180px;" onchange="this.form.submit()">
+                <option value="">Todos os Setores</option>
+                {% for s in setores %}
+                <option value="{{ s.id }}" {% if filtro_atual.setor == s.id %}selected{% endif %}>{{ s.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="position-relative">
+            <select name="status" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 150px;" onchange="this.form.submit()">
+                <option value="">Todos Status</option>
+                <option value="abertos" {% if filtro_atual.status == 'abertos' %}selected{% endif %}>Em Aberto</option>
+                <option value="fechados" {% if filtro_atual.status == 'fechados' %}selected{% endif %}>Finalizados</option>
+                <option value="flash" {% if filtro_atual.status == 'flash' %}selected{% endif %}>Flash</option>
+            </select>
+        </div>
+        
+        <div class="position-relative">
+            <select name="periodo" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 160px;" onchange="this.form.submit()">
+                <option value="7" {% if filtro_atual.periodo == '7' %}selected{% endif %}>Últimos 7 dias</option>
+                <option value="30" {% if filtro_atual.periodo == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                <option value="90" {% if filtro_atual.periodo == '90' %}selected{% endif %}>Últimos 3 meses</option>
+                <option value="365" {% if filtro_atual.periodo == '365' %}selected{% endif %}>Este Ano</option>
+            </select>
+        </div>
+
+        {% if filtro_atual.setor or filtro_atual.status or filtro_atual.periodo != '30' %}
+        <a href="{% url 'dashboard_geral' %}" class="btn btn-light rounded-circle border" title="Limpar Filtros">
+            <i class="bi bi-x-lg"></i>
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card-custom p-4 h-100 border-start border-4 border-primary">
+            <div class="text-muted small fw-bold text-uppercase mb-2">Total de Chamados</div>
+            <h1 class="display-5 fw-bold mb-0 text-dark">{{ kpis.total }}</h1>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-custom p-4 h-100 border-start border-4 border-success">
+            <div class="text-muted small fw-bold text-uppercase mb-2">Resolvidos</div>
+            <div class="d-flex align-items-end justify-content-between">
+                <h1 class="display-5 fw-bold mb-0 text-success">{{ kpis.fechados }}</h1>
+                <span class="badge bg-success bg-opacity-10 text-success">{{ kpis.taxa_resolucao }}% Taxa</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card-custom p-4 h-100 border-start border-4 border-warning">
+            <div class="text-muted small fw-bold text-uppercase mb-2">Em Aberto</div>
+            <h1 class="display-5 fw-bold mb-0 text-warning">{{ kpis.em_aberto }}</h1>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card-custom p-4 h-100 border-start border-4 border-danger">
+            <div class="text-muted small fw-bold text-uppercase mb-2">Críticos</div>
+            <div class="d-flex align-items-end justify-content-between">
+                <div>
+                    <h1 class="display-5 fw-bold mb-0 text-danger">{{ kpis.sla_estourado }}</h1>
+                    <small class="text-danger fw-bold" style="font-size: 0.7rem;">SLA Vencido</small>
+                </div>
+                <div class="text-end">
+                    <h3 class="mb-0 fw-bold">{{ kpis.flash }}</h3>
+                    <small class="text-muted" style="font-size: 0.7rem;">Flashs</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card-custom p-4 h-100">
+            <h5 class="fw-bold mb-4">Volume por Setor</h5>
+            <div style="height: 300px;">
+                <canvas id="chartSetor"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-custom p-4 h-100">
+            <h5 class="fw-bold mb-4">Distribuição de Status</h5>
+            <div style="height: 250px; position: relative;">
+                <canvas id="chartStatus"></canvas>
+            </div>
+            <div class="text-center mt-3 small text-muted">Baseado nos filtros atuais</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card-custom p-4">
+            <h5 class="fw-bold mb-4">Top 5 Categorias Mais Solicitadas</h5>
+            <div style="height: 250px;">
+                <canvas id="chartCategorias"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Configuração de Cores
+    const colors = {
+        primary: '#FF6432',
+        palette: ['#FF6432', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+    };
+
+    // Chart 1: Setores (Barra)
+    new Chart(document.getElementById('chartSetor'), {
+        type: 'bar',
+        data: {
+            labels: {{ charts.setor_labels|safe }},
+            datasets: [{
+                label: 'Chamados',
+                data: {{ charts.setor_values|safe }},
+                backgroundColor: colors.primary,
+                borderRadius: 6,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Chart 2: Status (Doughnut)
+    new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ charts.status_labels|safe }},
+            datasets: [{
+                data: {{ charts.status_values|safe }},
+                backgroundColor: colors.palette,
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
+            }
+        }
+    });
+
+    // Chart 3: Categorias (Barra Horizontal)
+    new Chart(document.getElementById('chartCategorias'), {
+        type: 'bar',
+        data: {
+            labels: {{ charts.cat_labels|safe }},
+            datasets: [{
+                label: 'Ocorrências',
+                data: {{ charts.cat_values|safe }},
+                backgroundColor: '#3b82f6', // Azul
+                borderRadius: 4,
+                indexAxis: 'y',
+                barThickness: 25
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
+        }
+    });
+</script>
+
+{% endblock %}

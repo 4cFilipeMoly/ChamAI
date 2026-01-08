@@ -1,0 +1,126 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card-custom p-5">
+            
+            <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
+                <div>
+                    <h1 class="h4 fw-bold mb-1">Editar Chamado #{{ chamado.id_chamado }}</h1>
+                    <span class="text-muted small">Faça ajustes antes do atendimento iniciar.</span>
+                </div>
+                <span class="badge bg-light text-dark border px-3 py-2">{{ chamado.status }}</span>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4">
+                <h6 class="fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Atenção:</h6>
+                <ul class="mb-0 small">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <form method="post" enctype="multipart/form-data" id="chamadoForm">
+                {% csrf_token %}
+                
+                <div class="bg-light p-4 rounded-4 mb-4 border border-dashed">
+                    <h6 class="form-label mb-3 text-primary"><i class="bi bi-diagram-3-fill me-2"></i>Classificação</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">1. Setor Macro</label>
+                            {{ form.setor_destino }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">2. Área Específica</label>
+                            {{ form.subsetor }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">3. Categoria</label>
+                            {{ form.categoria }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <label class="form-label">Título do Assunto</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição Detalhada</label>
+                        {{ form.descricao }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Adicionar Anexos</label>
+                        {{ form.arquivos }}
+                        {% if chamado.caminhos_anexos.anexos %}
+                            <div class="mt-2 small text-muted"><i class="bi bi-paperclip"></i> Anexos anteriores mantidos.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-4 mb-5 bg-white border">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <label class="fw-bold mb-0 fs-5">Impacto Atualizado</label>
+                        <span id="badgeImpacto" class="badge bg-dark text-white shadow-sm px-3 py-2">Calculando...</span>
+                    </div>
+                    {{ form.impacto_solicitante }}
+                    <p id="descImpacto" class="text-center text-muted mt-3 mb-0 fst-italic small">--</p>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <a href="{% url 'meus_tickets' %}" class="btn btn-light border py-3 flex-fill fw-bold">Cancelar</a>
+                    <button type="submit" class="btn btn-primary-4c py-3 flex-fill">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Scripts (Mesma lógica do Abrir Chamado) ---
+    const selectSetor = document.getElementById("id_setor_destino");
+    const selectSubsetor = document.getElementById("id_subsetor");
+    const selectCategoria = document.getElementById("id_categoria");
+
+    selectSetor.addEventListener('change', function() {
+        const url = "{% url 'ajax_load_subsetores' %}"; 
+        const setorId = this.value;
+        if(setorId) {
+            fetch(`${url}?setor_destino=${setorId}`).then(res => res.text()).then(html => {
+                selectSubsetor.innerHTML = html;
+                selectCategoria.innerHTML = '<option value="">Selecione primeiro a área...</option>';
+            });
+        }
+    });
+
+    selectSubsetor.addEventListener('change', function() {
+        const url = "{% url 'ajax_load_categorias' %}"; 
+        const subsetorId = this.value;
+        if(subsetorId) {
+            fetch(`${url}?subsetor=${subsetorId}`).then(res => res.text()).then(html => selectCategoria.innerHTML = html);
+        }
+    });
+
+    const slider = document.getElementById('id_impacto_solicitante');
+    const badge = document.getElementById('badgeImpacto');
+    const desc = document.getElementById('descImpacto');
+
+    function updateSlider() {
+        const val = parseInt(slider.value);
+        let texto = "", classe = "", descricao = "";
+        if (val <= 3) { texto = val + " - BAIXO"; classe = "bg-success"; descricao = "Impacto mínimo."; } 
+        else if (val <= 6) { texto = val + " - MÉDIO"; classe = "bg-warning text-dark"; descricao = "Incômodo, mas há contorno."; } 
+        else if (val <= 8) { texto = val + " - ALTO"; classe = "bg-warning border border-danger text-dark"; descricao = "Trabalho prejudicado."; } 
+        else { texto = val + " - CRÍTICO"; classe = "bg-danger"; descricao = "PARADA TOTAL."; }
+        badge.innerText = texto; badge.className = "badge shadow-sm px-3 py-2 " + classe;
+        desc.innerText = descricao;
+    }
+    slider.addEventListener('input', updateSlider);
+    updateSlider();
+</script>
+{% endblock %}

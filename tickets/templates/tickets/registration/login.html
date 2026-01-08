@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ChamAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root { --primary-color: #FF6432; --primary-hover: #E8522A; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;}
+        .auth-card { background: white; padding: 3rem; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); width: 100%; max-width: 420px; border: 1px solid #e2e8f0; }
+        .form-control { border-radius: 12px; padding: 0.8rem 1rem; border: 1px solid #e2e8f0; margin-bottom: 1rem; }
+        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 4px rgba(255, 100, 50, 0.1); outline: none; }
+        .btn-primary-4c { background-color: var(--primary-color); border: none; color: white; font-weight: 600; padding: 0.9rem; border-radius: 12px; width: 100%; margin-top: 1rem; transition: 0.2s; }
+        .btn-primary-4c:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="text-center mb-5">
+            <img src="https://static.wixstatic.com/media/d2460d_86d25e8220384b0296fc15b9ea4fc9a7~mv2.png/v1/fill/w_56,h_56,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/4c%20digital%20logo.png" 
+                 alt="Logo 4C" style="height: 60px; width: 60px; margin-bottom: 15px;">
+            
+            <h3 class="fw-bold" style="color: #0f172a; letter-spacing: -1px;">
+                Cham<span style="color: var(--primary-color);">AI</span>
+            </h3>
+            <p class="text-muted small">Acesse sua conta para continuar</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div class="alert alert-danger py-2 text-center small border-0 rounded-3 mb-3 bg-danger bg-opacity-10 text-danger">
+                    Credenciais inválidas.
+                </div>
+            {% endif %}
+            
+            <div class="mb-3">
+                <input type="text" name="username" class="form-control" placeholder="Usuário" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" name="password" class="form-control" placeholder="Senha" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary-4c">Entrar</button>
+        </form>
+
+        <div class="text-center mt-4 pt-3 border-top">
+            <span class="text-muted small">Novo por aqui?</span>
+            <a href="{% url 'signup' %}" class="text-decoration-none fw-bold ms-1" style="color: var(--primary-color);">Criar Conta</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,165 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card-custom p-4">
+            <h2 class="fw-bold mb-4">Abrir Novo Chamado</h2>
+            
+            <form method="post" enctype="multipart/form-data" id="chamadoForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">1. Setor de Destino</label>
+                    {{ form.setor_destino }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">2. Área Específica</label>
+                    {{ form.subsetor }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">3. Categoria do Serviço</label>
+                    {{ form.categoria }}
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="fw-bold mb-1">Título do Assunto</label>
+                        {{ form.titulo }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="fw-bold mb-1">Prioridade</label>
+                        {{ form.tipo }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">Descrição Detalhada</label>
+                    {{ form.descricao }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold mb-1">Evidências / Anexos</label>
+                    {{ form.arquivos }}
+                </div>
+
+                <div class="mb-4 p-3 bg-light rounded border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="fw-bold mb-0">Impacto no Trabalho</label>
+                        <span id="badgeImpacto" class="badge bg-warning text-dark fs-6">5 - Médio</span>
+                    </div>
+                    
+                    {{ form.impacto_solicitante }}
+                    
+                    <div class="d-flex justify-content-between small text-muted mt-2">
+                        <span><i class="bi bi-emoji-smile"></i> Consigo trabalhar</span>
+                        <span><i class="bi bi-emoji-dizzy"></i> Trabalho Parado</span>
+                    </div>
+                    <p id="descImpacto" class="text-center small text-muted mt-2 mb-0">
+                        O problema causa lentidão, mas há contorno.
+                    </p>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary-4c btn-lg fw-bold">Abrir Chamado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LÓGICA DE CASCATA (AJAX) ---
+    const selectSetor = document.getElementById("id_setor_destino");
+    const selectSubsetor = document.getElementById("id_subsetor");
+    const selectCategoria = document.getElementById("id_categoria");
+
+    selectSetor.addEventListener('change', function() {
+        const url = "{% url 'ajax_load_subsetores' %}"; 
+        const setorId = this.value;
+        selectSubsetor.innerHTML = '<option value="">Carregando...</option>';
+        selectCategoria.innerHTML = '<option value="">Aguardando subsetor...</option>';
+
+        if (setorId) {
+            fetch(`${url}?setor_destino=${setorId}`)
+                .then(response => response.text())
+                .then(html => {
+                    selectSubsetor.innerHTML = html;
+                    selectCategoria.innerHTML = '<option value="">Selecione primeiro o subsetor...</option>';
+                });
+        }
+    });
+
+    selectSubsetor.addEventListener('change', function() {
+        const url = "{% url 'ajax_load_categorias' %}"; 
+        const subsetorId = this.value;
+        selectCategoria.innerHTML = '<option value="">Carregando...</option>';
+
+        if (subsetorId) {
+            fetch(`${url}?subsetor=${subsetorId}`)
+                .then(response => response.text())
+                .then(html => selectCategoria.innerHTML = html);
+        }
+    });
+
+    // --- LÓGICA DO SLIDER DINÂMICO ---
+    const slider = document.getElementById('id_impacto_solicitante'); // ID padrão do Django
+    const badge = document.getElementById('badgeImpacto');
+    const desc = document.getElementById('descImpacto');
+
+    function updateSlider() {
+        const val = parseInt(slider.value);
+        let texto = "";
+        let classe = "";
+        let descricao = "";
+
+        if (val <= 3) {
+            texto = val + " - Baixo";
+            classe = "bg-success text-white";
+            descricao = "Impacto mínimo. Consigo realizar minhas tarefas normalmente.";
+        } else if (val <= 6) {
+            texto = val + " - Médio";
+            classe = "bg-warning text-dark";
+            descricao = "O problema causa lentidão ou incômodo, mas há contorno.";
+        } else if (val <= 8) {
+            texto = val + " - Alto";
+            classe = "bg-orange text-white"; // Vamos definir css pra orange ou usar warning-subtle
+            descricao = "Trabalho muito prejudicado. Algumas funções vitais não funcionam.";
+            slider.classList.add('accent-danger');
+        } else {
+            texto = val + " - CRÍTICO";
+            classe = "bg-danger text-white";
+            descricao = "TOTALMENTE PARADO. Não consigo exercer minha função.";
+        }
+
+        badge.innerText = texto;
+        badge.className = "badge fs-6 " + classe;
+        desc.innerText = descricao;
+    }
+
+    // Escuta o movimento
+    slider.addEventListener('input', updateSlider);
+    // Roda ao carregar a página
+    updateSlider();
+
+    // Alerta Flash
+    const selectTipo = document.getElementById('id_tipo');
+    function toggleForm() {
+        if(selectTipo.value === 'Flash') {
+            alert("⚠️ ATENÇÃO: Use FLASH apenas para paradas críticas totais. SLA de 1 hora.");
+            slider.value = 10; // Força impacto 10
+            updateSlider();
+        }
+    }
+</script>
+
+<style>
+    /* Estilo para deixar a cor laranja disponível */
+    .bg-orange { background-color: #fd7e14 !important; }
+</style>
+
+{% endblock %}

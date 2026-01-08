@@ -1,0 +1,255 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+<a href="{% url 'area_resolutor' %}" class="text-decoration-none text-muted mb-4 d-inline-block hover-orange">
+    <i class="bi bi-arrow-left me-2"></i>Voltar para o Cockpit
+</a>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card-custom p-4 bg-white h-100 position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 h-100" style="width: 4px; background: {% if chamado.flash %}var(--bs-danger){% else %}var(--color-primary){% endif %};"></div>
+            
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge bg-light text-dark border">#{{ chamado.id_chamado }}</span>
+                {% if chamado.flash %}
+                    <span class="badge bg-danger"><i class="bi bi-lightning-fill"></i> FLASH</span>
+                {% endif %}
+            </div>
+            
+            <h3 class="fw-bold mb-2">{{ chamado.titulo }}</h3>
+            <p class="text-muted small mb-4">{{ chamado.categoria.nome }}</p>
+            
+            <div class="d-flex align-items-center gap-3 mb-4 pb-4 border-bottom">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center fw-bold text-primary border" style="width: 45px; height: 45px;">
+                    {{ chamado.solicitante.nome|slice:":1" }}
+                </div>
+                <div>
+                    <div class="fw-bold text-dark">{{ chamado.solicitante.nome }}</div>
+                    <div class="text-muted small">{{ chamado.solicitante.setor.nome }}</div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="text-muted small fw-bold text-uppercase mb-2">Descrição</label>
+                <div class="bg-light p-3 rounded-3 text-dark" style="white-space: pre-wrap;">{{ chamado.descricao }}</div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="text-muted small fw-bold text-uppercase mb-2">Impacto Declarado</label>
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="fw-bold text-primary mb-0">{{ chamado.impacto_solicitante }}</h2>
+                    <span class="text-muted small">/ 10</span>
+                </div>
+            </div>
+
+            {% if chamado.caminhos_anexos %}
+            <div class="mt-4 pt-4 border-top">
+                <label class="text-muted small fw-bold text-uppercase mb-2">Anexos</label>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for anexo in chamado.caminhos_anexos.anexos %}
+                    <a href="{{ anexo }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-paperclip"></i> Ver Anexo {{ forloop.counter }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card-custom p-4 border-top border-4 border-primary h-100">
+            
+            {% if chamado.status == 'Em fila' %}
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold mb-0">Triagem e SLA</h4>
+                    <span class="badge bg-secondary">Aguardando Análise</span>
+                </div>
+                
+                <form method="post" id="formTriagem">
+                    {% csrf_token %}
+                    
+                    {% if not chamado.flash %}
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <label class="fw-bold small text-muted text-uppercase mb-1">Confiança (1-10)</label>
+                            <input type="number" class="form-control" name="confianca" id="conf" min="1" max="10" value="5" onchange="calcSla()">
+                            <div class="form-text small">Conhecimento sobre o tema</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="fw-bold small text-muted text-uppercase mb-1">Facilidade (1-10)</label>
+                            <input type="number" class="form-control" name="facilidade" id="facil" min="1" max="10" value="5" onchange="calcSla()">
+                            <div class="form-text small">Recursos disponíveis</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light border d-flex align-items-center justify-content-between mb-4">
+                        <div class="small"><i class="bi bi-calculator me-2"></i>ICE Score Calculado:</div>
+                        <strong id="ice-display" class="fs-5 text-primary">--</strong>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger mb-4 d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                        <div>
+                            <strong>Modo Flash Detectado</strong><br>
+                            ICE Score ignorado. SLA definido para 2 horas.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-5">
+                        <label class="fw-bold text-uppercase small text-muted mb-2">Data de Entrega (SLA)</label>
+                        <input type="datetime-local" class="form-control form-control-lg fw-bold text-primary bg-light" name="sla_prazo" id="sla_input" required>
+                        <div class="form-text">Data sugerida pelo sistema. Ajuste se necessário.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="acao" value="aprovar" class="btn btn-primary-4c btn-lg py-3 shadow-sm">
+                            <i class="bi bi-check-circle-fill me-2"></i> Aprovar e Iniciar
+                        </button>
+                        
+                        <div class="row g-2 mt-2">
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#modalRecusa" onclick="setAcao('declinar')">Declinar</button>
+                            </div>
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#modalRecusa" onclick="setAcao('evitar')">Evitar</button>
+                            </div>
+                            <div class="col-4">
+                                <button type="button" class="btn btn-outline-dark w-100" data-bs-toggle="modal" data-bs-target="#modalRepasse">Repassar</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+            {% else %}
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold mb-0 text-primary">Gerenciar Chamado</h4>
+                    <span class="badge bg-success px-3 py-2">{{ chamado.status }}</span>
+                </div>
+
+                <div class="alert alert-light border mb-4">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Responsável:</span>
+                        <span>SLA:</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold text-dark">
+                        <span>{{ chamado.responsavel_tecnico.nome }}</span>
+                        <span>{{ chamado.sla_prazo|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Atualizar Status para:</label>
+                        <select name="novo_status" class="form-select form-select-lg">
+                            <option value="Em Produção" {% if chamado.status == 'Em Produção' %}selected{% endif %}>Em Produção (Trabalhando)</option>
+                            <option value="Em Stand By" {% if chamado.status == 'Em Stand By' %}selected{% endif %}>Em Stand By (Aguardando Terceiro)</option>
+                            <option value="Fechado" {% if chamado.status == 'Fechado' %}selected{% endif %}>Fechado (Concluído)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Nota Técnica / Histórico</label>
+                        <textarea name="resposta_tecnica" class="form-control" rows="5" placeholder="Descreva o que foi feito, testes realizados ou motivos da pausa..."></textarea>
+                    </div>
+
+                    <button type="submit" name="acao" value="atualizar_status" class="btn btn-primary-4c w-100 py-3">
+                        <i class="bi bi-save me-2"></i> Salvar Atualização
+                    </button>
+                </form>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRecusa" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Justificativa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p class="text-muted small">Por que você não pode atender este chamado agora?</p>
+                <textarea name="justificativa_recusa" class="form-control" rows="3" placeholder="Digite o motivo..." required></textarea>
+                <input type="hidden" name="acao" id="acao_hidden"> 
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger px-4">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRepasse" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Repassar Chamado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="fw-bold small mb-2">Enviar para qual setor?</label>
+                    <select name="novo_setor" class="form-select">
+                        {% for s in setores %}
+                        <option value="{{ s.id }}">{{ s.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="fw-bold small mb-2">Motivo do Repasse</label>
+                    <textarea name="justificativa_recusa" class="form-control" rows="2" placeholder="Ex: Este assunto pertence ao Jurídico..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="submit" name="acao" value="repassar" class="btn btn-dark px-4">Repassar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Variáveis do Django para o JS
+    const impacto = {{ chamado.impacto_solicitante }};
+    const isFlash = {{ chamado.flash|yesno:"true,false" }};
+    
+    function setAcao(acao) {
+        document.getElementById('acao_hidden').value = acao;
+    }
+
+    function calcSla() {
+        if (isFlash) {
+            // Flash: +2 horas
+            let now = new Date();
+            now.setHours(now.getHours() + 2);
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('sla_input').value = now.toISOString().slice(0, 16);
+            return;
+        }
+
+        const conf = parseInt(document.getElementById('conf').value) || 5;
+        const facil = parseInt(document.getElementById('facil').value) || 5;
+        
+        // Média Ponderada: (Impacto*2 + Conf + Facil) / 4
+        const score = ((impacto * 2) + conf + facil) / 4;
+        document.getElementById('ice-display').innerText = score.toFixed(1);
+
+        // Regra de Dias sugerida
+        let dias = 7; // Normal
+        if (score >= 8) dias = 1; // Urgente
+        else if (score >= 5) dias = 3; // Alta
+
+        let date = new Date();
+        date.setDate(date.getDate() + dias);
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        document.getElementById('sla_input').value = date.toISOString().slice(0, 16);
+    }
+
+    // Inicializa o cálculo ao carregar a página se for triagem
+    {% if chamado.status == 'Em fila' %}
+        calcSla();
+    {% endif %}
+</script>
+{% endblock %}

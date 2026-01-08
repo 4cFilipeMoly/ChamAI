@@ -1,0 +1,102 @@
+{% extends 'tickets/base.html' %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    
+    <a href="{% url 'meus_tickets' %}" class="text-decoration-none text-muted mb-4 d-inline-flex align-items-center hover-orange fw-medium">
+        <i class="bi bi-arrow-left me-2"></i>Voltar para lista
+    </a>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom p-4 mb-4 position-relative overflow-hidden">
+                <div class="position-absolute top-0 start-0 h-100" style="width: 4px; background: {% if chamado.flash %}var(--bs-danger){% else %}var(--color-primary){% endif %};"></div>
+
+                <div class="d-flex justify-content-between align-items-start mb-4 border-bottom pb-4">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="text-muted fw-bold small">TICKET #{{ chamado.id_chamado }}</span>
+                            {% if chamado.flash %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10 rounded-pill px-2 py-1">
+                                    <i class="bi bi-lightning-fill"></i> Flash Priority
+                                </span>
+                            {% endif %}
+                        </div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ chamado.categoria.nome }}</h3>
+                    </div>
+                    
+                    <div class="text-end">
+                         <span class="badge bg-light text-dark border px-3 py-2 fs-6">{{ chamado.status }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <label class="text-muted small fw-bold text-uppercase mb-2">Sua Descrição</label>
+                    <div class="text-dark fs-6" style="line-height: 1.7; white-space: pre-line;">
+                        {{ chamado.descricao }}
+                    </div>
+                </div>
+
+                {% if chamado.caminhos_anexos and chamado.caminhos_anexos.anexos %}
+                <div class="mb-2 bg-light p-3 rounded-3 border border-light">
+                    <label class="text-muted small fw-bold text-uppercase mb-2 d-block">Anexos Enviados</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% for anexo in chamado.caminhos_anexos.anexos %}
+                        <a href="{{ anexo }}" target="_blank" class="btn btn-sm btn-white border shadow-sm d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-text text-primary"></i> 
+                            Arquivo {{ forloop.counter }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <h5 class="fw-bold mb-3 ms-1 text-dark">Resposta do Técnico</h5>
+            <div class="card-custom p-0 overflow-hidden">
+                <div class="p-4 bg-white">
+                    {% if chamado.descricao_resposta or chamado.justificativa_recusa %}
+                        {% if chamado.descricao_resposta %}
+                            <div class="mb-3">
+                                <strong class="d-block text-primary mb-2">Parecer Técnico:</strong>
+                                <pre style="white-space: pre-wrap; font-family: 'Poppins', sans-serif; color: #334155;">{{ chamado.descricao_resposta }}</pre>
+                            </div>
+                        {% endif %}
+                        {% if chamado.justificativa_recusa %}
+                            <div class="alert alert-warning border-0">
+                                <strong>Justificativa:</strong> {{ chamado.justificativa_recusa }}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted opacity-50">
+                            <i class="bi bi-chat-square-dots display-4"></i>
+                            <p class="mt-3 fw-medium">Aguardando análise da equipe técnica.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-custom p-4">
+                <h6 class="fw-bold mb-4 text-muted small text-uppercase">Detalhes do Pedido</h6>
+                
+                <ul class="list-unstyled mb-0 d-grid gap-3">
+                    <li class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Enviado para Setor</span>
+                        <span class="fw-bold text-dark text-end">{{ chamado.setor_destino.nome }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Data Abertura</span>
+                        <span class="text-end">{{ chamado.data_abertura|date:"d/m/Y H:i" }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Previsão (SLA)</span>
+                        <span class="fw-bold text-primary">{{ chamado.sla_prazo|date:"d/m/Y H:i"|default:"Em definição" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
