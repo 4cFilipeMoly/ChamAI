@@ -48,6 +48,8 @@ class Command(BaseCommand):
             "danilo.bezerra@4cdigital.com.br",
             "dayvid.borges@4cdigital.com.br",
             "filipe.molinari@4cdigital.com.br", 
+            "yasmin.oliveira@4cdigital.com.br",
+            "hellen.medeiros@4cdigital.com.br"
         ]
 
         self.stdout.write("\n--- ATUALIZANDO HEADS ---")

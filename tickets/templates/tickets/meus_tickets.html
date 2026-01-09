@@ -1,35 +1,104 @@
 {% extends 'tickets/base.html' %}
 {% block content %}
+
 <div class="d-flex justify-content-between align-items-end mb-4">
-    <div><h2 class="fw-bold mb-1">Minhas Solicitações</h2><p class="text-muted mb-0">Gerencie seus pedidos</p></div>
-    <a href="{% url 'abrir_chamado' %}" class="btn btn-primary-4c shadow-sm"><i class="bi bi-plus-lg me-2"></i>Novo</a>
+    <div>
+        <h2 class="fw-bold mb-1">Minhas Solicitações</h2>
+        <p class="text-muted mb-0">Acompanhe o andamento dos seus pedidos.</p>
+    </div>
+    <a href="{% url 'abrir_chamado' %}" class="btn btn-primary-4c shadow-sm">
+        <i class="bi bi-plus-lg me-2"></i>Novo Chamado
+    </a>
 </div>
+
 <div class="card-custom overflow-hidden">
     <table class="table table-hover align-middle mb-0">
-        <thead class="bg-light"><tr><th class="py-3 ps-4">ID</th><th>Assunto</th><th>Status</th><th>Data</th><th class="text-end pe-4">Ações</th></tr></thead>
+        <thead class="bg-light">
+            <tr>
+                <th class="py-3 ps-4 text-uppercase small text-muted">ID</th>
+                <th class="py-3 text-uppercase small text-muted">Assunto</th>
+                <th class="py-3 text-uppercase small text-muted">Status</th>
+                <th class="py-3 text-uppercase small text-muted">Data</th>
+                <th class="text-end pe-4 py-3 text-uppercase small text-muted">Ações</th>
+            </tr>
+        </thead>
         <tbody>
             {% for c in chamados %}
             <tr>
-                <td class="ps-4 fw-bold text-primary" onclick="location.href='{% url 'ver_ticket' c.id_chamado %}'" style="cursor:pointer">#{{ c.id_chamado }}</td>
+                <td class="ps-4 fw-bold text-primary" onclick="location.href='{% url 'ver_ticket' c.id_chamado %}'" style="cursor:pointer">
+                    #{{ c.id_chamado }}
+                </td>
                 <td onclick="location.href='{% url 'ver_ticket' c.id_chamado %}'" style="cursor:pointer">
                     <div class="fw-bold text-dark">{{ c.titulo }}</div>
-                    <div class="d-flex align-items-center gap-2 mt-1"><span class="badge bg-light text-secondary border fw-normal">{{ c.setor_destino.nome }}</span></div>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span class="badge bg-light text-secondary border fw-normal">{{ c.setor_destino.nome }}</span>
+                        {% if c.flash %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-10">Flash</span>
+                        {% endif %}
+                    </div>
                 </td>
-                <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ c.status }}</span></td>
-                <td class="text-muted small">{{ c.data_abertura|date:"d M, H:i" }}</td>
+                <td>
+                    {% if c.status == 'Em fila' %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-3 py-2 rounded-pill">Na Fila</span>
+                    {% elif c.status == 'Em Produção' %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">Em Andamento</span>
+                    {% elif c.status == 'Stand By' %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill">Pausado</span>
+                    {% elif c.status == 'Fechado' %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Concluído</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ c.status }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">
+                    {{ c.data_abertura|date:"d M, H:i" }}
+                </td>
                 <td class="text-end pe-4">
                     {% if c.is_editable %}
                         <div class="btn-group">
-                            <a href="{% url 'editar_chamado' c.id_chamado %}" class="btn btn-sm btn-white border text-secondary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
-                            <button type="button" class="btn btn-sm btn-white border text-danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ c.id_chamado }}" title="Cancelar"><i class="bi bi-trash-fill"></i></button>
+                            <a href="{% url 'editar_chamado' c.id_chamado %}" class="btn btn-sm btn-white border text-secondary shadow-sm" title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-white border text-danger shadow-sm" data-bs-toggle="modal" data-bs-target="#cancelModal{{ c.id_chamado }}" title="Cancelar">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
                         </div>
-                        <div class="modal fade text-start" id="cancelModal{{ c.id_chamado }}" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content"><div class="modal-header border-0"><h6 class="modal-title fw-bold">Cancelar?</h6></div><div class="modal-body text-muted small">Ação irreversível.</div><div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Voltar</button><form action="{% url 'cancelar_chamado' c.id_chamado %}" method="post" style="display:inline;"><button type="submit" class="btn btn-sm btn-danger">Sim, Cancelar</button>{% csrf_token %}</form></div></div></div></div>
+
+                        <div class="modal fade text-start" id="cancelModal{{ c.id_chamado }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg">
+                                    <div class="modal-header border-0 pb-0">
+                                        <h6 class="modal-title fw-bold">Cancelar chamado?</h6>
+                                    </div>
+                                    <div class="modal-body text-muted small">
+                                        Esta ação é irreversível. O chamado sairá da fila.
+                                    </div>
+                                    <div class="modal-footer border-0 pt-0">
+                                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Voltar</button>
+                                        <form action="{% url 'cancelar_chamado' c.id_chamado %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">Sim, Cancelar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     {% else %}
-                        <span class="text-muted small opacity-50"><i class="bi bi-lock-fill"></i> Bloqueado</span>
+                        <a href="{% url 'ver_ticket' c.id_chamado %}" class="btn btn-sm btn-light border text-muted">
+                            <i class="bi bi-eye"></i> Ver
+                        </a>
                     {% endif %}
                 </td>
             </tr>
-            {% empty %}<tr><td colspan="5" class="text-center py-5">Nenhum chamado encontrado.</td></tr>{% endfor %}
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox display-4 mb-3 d-block opacity-25"></i>
+                    <p class="mb-2 fw-medium">Nenhum chamado encontrado.</p>
+                    <a href="{% url 'abrir_chamado' %}" class="btn btn-sm btn-outline-primary">Abrir o primeiro</a>
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>

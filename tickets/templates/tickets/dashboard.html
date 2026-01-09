@@ -1,163 +1,155 @@
 {% extends 'tickets/base.html' %}
+{% load static %}
+
 {% block content %}
-
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-5 gap-3">
-    <div>
-        <h2 class="fw-bold mb-1">Visão Geral</h2>
-        <p class="text-muted mb-0">Monitoramento e indicadores em tempo real</p>
-    </div>
+<div class="container-fluid p-0">
     
-    <form method="get" class="d-flex flex-wrap gap-2 bg-white p-2 rounded-4 shadow-sm border align-items-center">
-        <div class="position-relative">
-            <select name="setor" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 180px;" onchange="this.form.submit()">
-                <option value="">Todos os Setores</option>
-                {% for s in setores %}
-                <option value="{{ s.id }}" {% if filtro_atual.setor == s.id %}selected{% endif %}>{{ s.nome }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="position-relative">
-            <select name="status" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 150px;" onchange="this.form.submit()">
-                <option value="">Todos Status</option>
-                <option value="abertos" {% if filtro_atual.status == 'abertos' %}selected{% endif %}>Em Aberto</option>
-                <option value="fechados" {% if filtro_atual.status == 'fechados' %}selected{% endif %}>Finalizados</option>
-                <option value="flash" {% if filtro_atual.status == 'flash' %}selected{% endif %}>Flash</option>
-            </select>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Dashboard Operacional</h2>
+            <p class="text-muted mb-0">Métricas de performance e volumetria.</p>
         </div>
         
-        <div class="position-relative">
-            <select name="periodo" class="form-select border-0 bg-light fw-medium text-secondary ps-3" style="min-width: 160px;" onchange="this.form.submit()">
+        <form class="d-flex gap-2 flex-wrap bg-white p-2 rounded shadow-sm border" method="GET">
+            
+            <select class="form-select form-select-sm border-0 bg-light" name="periodo" style="width: 130px; font-weight: 500;">
                 <option value="7" {% if filtro_atual.periodo == '7' %}selected{% endif %}>Últimos 7 dias</option>
+                <option value="15" {% if filtro_atual.periodo == '15' %}selected{% endif %}>Últimos 15 dias</option>
                 <option value="30" {% if filtro_atual.periodo == '30' %}selected{% endif %}>Últimos 30 dias</option>
-                <option value="90" {% if filtro_atual.periodo == '90' %}selected{% endif %}>Últimos 3 meses</option>
-                <option value="365" {% if filtro_atual.periodo == '365' %}selected{% endif %}>Este Ano</option>
+                <option value="60" {% if filtro_atual.periodo == '60' %}selected{% endif %}>Últimos 60 dias</option>
             </select>
-        </div>
+            
+            <select class="form-select form-select-sm border-0 bg-light" name="setor" style="width: 160px; font-weight: 500;">
+                <option value="">Todos os Setores</option>
+                {% for setor in setores %}
+                <option value="{{ setor.id }}" {% if filtro_atual.setor == setor.id %}selected{% endif %}>{{ setor.nome }}</option>
+                {% endfor %}
+            </select>
 
-        {% if filtro_atual.setor or filtro_atual.status or filtro_atual.periodo != '30' %}
-        <a href="{% url 'dashboard_geral' %}" class="btn btn-light rounded-circle border" title="Limpar Filtros">
-            <i class="bi bi-x-lg"></i>
-        </a>
-        {% endif %}
-    </form>
-</div>
+            <select class="form-select form-select-sm border-0 bg-light" name="status" style="width: 140px; font-weight: 500;">
+                <option value="">Todos Status</option>
+                <option value="abertos" {% if filtro_atual.status == 'abertos' %}selected{% endif %}>Em Aberto</option>
+                <option value="fechados" {% if filtro_atual.status == 'fechados' %}selected{% endif %}>Fechados</option>
+                <option value="flash" {% if filtro_atual.status == 'flash' %}selected{% endif %}>Somente Flash</option>
+            </select>
 
-<div class="row g-4 mb-5">
-    <div class="col-md-3">
-        <div class="card-custom p-4 h-100 border-start border-4 border-primary">
-            <div class="text-muted small fw-bold text-uppercase mb-2">Total de Chamados</div>
-            <h1 class="display-5 fw-bold mb-0 text-dark">{{ kpis.total }}</h1>
-        </div>
-    </div>
-    
-    <div class="col-md-3">
-        <div class="card-custom p-4 h-100 border-start border-4 border-success">
-            <div class="text-muted small fw-bold text-uppercase mb-2">Resolvidos</div>
-            <div class="d-flex align-items-end justify-content-between">
-                <h1 class="display-5 fw-bold mb-0 text-success">{{ kpis.fechados }}</h1>
-                <span class="badge bg-success bg-opacity-10 text-success">{{ kpis.taxa_resolucao }}% Taxa</span>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-primary-4c btn-sm px-3 rounded-2">
+                <i class="bi bi-filter"></i> Filtrar
+            </button>
+        </form>
     </div>
 
-    <div class="col-md-3">
-        <div class="card-custom p-4 h-100 border-start border-4 border-warning">
-            <div class="text-muted small fw-bold text-uppercase mb-2">Em Aberto</div>
-            <h1 class="display-5 fw-bold mb-0 text-warning">{{ kpis.em_aberto }}</h1>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card-custom p-4 h-100 border-start border-4 border-danger">
-            <div class="text-muted small fw-bold text-uppercase mb-2">Críticos</div>
-            <div class="d-flex align-items-end justify-content-between">
-                <div>
-                    <h1 class="display-5 fw-bold mb-0 text-danger">{{ kpis.sla_estourado }}</h1>
-                    <small class="text-danger fw-bold" style="font-size: 0.7rem;">SLA Vencido</small>
-                </div>
-                <div class="text-end">
-                    <h3 class="mb-0 fw-bold">{{ kpis.flash }}</h3>
-                    <small class="text-muted" style="font-size: 0.7rem;">Flashs</small>
+    <div class="row g-3 mb-4">
+        
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #64748b !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-2">Total</h6>
+                    <h2 class="mb-0 fw-bold text-dark">{{ kpis.total }}</h2>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row g-4 mb-5">
-    <div class="col-lg-8">
-        <div class="card-custom p-4 h-100">
-            <h5 class="fw-bold mb-4">Volume por Setor</h5>
-            <div style="height: 300px;">
-                <canvas id="chartSetor"></canvas>
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #f59e0b !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-2">Em Aberto</h6>
+                    <h2 class="mb-0 fw-bold text-warning">{{ kpis.em_aberto }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #10b981 !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-2">Resolvidos</h6>
+                    <h2 class="mb-0 fw-bold text-success">{{ kpis.fechados }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #ef4444 !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-danger small fw-bold mb-2">SLA Crítico</h6>
+                    <h2 class="mb-0 fw-bold text-danger">{{ kpis.sla_estourado }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #8b5cf6 !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary small fw-bold mb-2" style="color: #8b5cf6 !important;">Flash</h6>
+                    <h2 class="mb-0 fw-bold" style="color: #8b5cf6;">{{ kpis.flash }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 4px solid #0f172a !important;">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-2">Taxa Resolução</h6>
+                    <h2 class="mb-0 fw-bold text-dark">{{ kpis.taxa_resolucao }}%</h2>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card-custom p-4 h-100">
-            <h5 class="fw-bold mb-4">Distribuição de Status</h5>
-            <div style="height: 250px; position: relative;">
-                <canvas id="chartStatus"></canvas>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">Distribuição por Status</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="chartStatus"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="text-center mt-3 small text-muted">Baseado nos filtros atuais</div>
+        </div>
+        
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">Volume por Setor de Destino</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartSetores"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<div class="row g-4">
-    <div class="col-12">
-        <div class="card-custom p-4">
-            <h5 class="fw-bold mb-4">Top 5 Categorias Mais Solicitadas</h5>
-            <div style="height: 250px;">
-                <canvas id="chartCategorias"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Configuração de Cores
-    const colors = {
-        primary: '#FF6432',
-        palette: ['#FF6432', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
-    };
+    // --- 1. Gráfico de Rosca (Status) ---
+    const ctxStatus = document.getElementById('chartStatus').getContext('2d');
+    
+    // Dados vindos do Django (JSON safe)
+    const statusLabels = {{ charts.status_labels|safe }};
+    const statusValues = {{ charts.status_values|safe }};
 
-    // Chart 1: Setores (Barra)
-    new Chart(document.getElementById('chartSetor'), {
-        type: 'bar',
-        data: {
-            labels: {{ charts.setor_labels|safe }},
-            datasets: [{
-                label: 'Chamados',
-                data: {{ charts.setor_values|safe }},
-                backgroundColor: colors.primary,
-                borderRadius: 6,
-                barThickness: 40
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { borderDash: [4, 4] } },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-
-    // Chart 2: Status (Doughnut)
-    new Chart(document.getElementById('chartStatus'), {
+    new Chart(ctxStatus, {
         type: 'doughnut',
         data: {
-            labels: {{ charts.status_labels|safe }},
+            labels: statusLabels,
             datasets: [{
-                data: {{ charts.status_values|safe }},
-                backgroundColor: colors.palette,
+                data: statusValues,
+                backgroundColor: [
+                    '#3b82f6', // Azul (Em produção/fila)
+                    '#10b981', // Verde (Resolvido)
+                    '#f59e0b', // Amarelo
+                    '#64748b', // Cinza
+                    '#ef4444'  // Vermelho
+                ],
                 borderWidth: 0,
                 hoverOffset: 10
             }]
@@ -165,35 +157,51 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '75%',
+            cutout: '65%',
             plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
+                legend: {
+                    position: 'bottom',
+                    labels: { usePointStyle: true, padding: 20 }
+                }
             }
         }
     });
 
-    // Chart 3: Categorias (Barra Horizontal)
-    new Chart(document.getElementById('chartCategorias'), {
+    // --- 2. Gráfico de Barras (Setores) ---
+    const ctxSetores = document.getElementById('chartSetores').getContext('2d');
+
+    // Dados vindos do Django
+    const setorLabels = {{ charts.setor_labels|safe }};
+    const setorValues = {{ charts.setor_values|safe }};
+
+    new Chart(ctxSetores, {
         type: 'bar',
         data: {
-            labels: {{ charts.cat_labels|safe }},
+            labels: setorLabels,
             datasets: [{
-                label: 'Ocorrências',
-                data: {{ charts.cat_values|safe }},
-                backgroundColor: '#3b82f6', // Azul
+                label: 'Chamados',
+                data: setorValues,
+                backgroundColor: '#0f172a', // Cor Primária
                 borderRadius: 4,
-                indexAxis: 'y',
-                barThickness: 25
+                barThickness: 30,
             }]
         },
         options: {
-            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { x: { beginAtZero: true } }
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { borderDash: [2, 4] }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
         }
     });
 </script>
-
 {% endblock %}

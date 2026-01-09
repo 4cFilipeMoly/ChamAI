@@ -10,7 +10,10 @@ from django.db.models import Count, Q
 from .models import Chamado, Colaborador, CategoriaConfig, Setor, Subsetor
 from .forms import AbrirChamadoForm, CadastroForm, EditarChamadoForm, GestaoColaboradorForm, CategoriaForm
 
-# --- AUTH ---
+# ==============================================================================
+# 1. AUTENTICAÇÃO E CADASTRO
+# ==============================================================================
+
 def cadastro(request):
     if request.method == 'POST':
         form = CadastroForm(request.POST)
@@ -19,10 +22,14 @@ def cadastro(request):
             login(request, user)
             messages.success(request, "Cadastro realizado! Bem-vindo.")
             return redirect('meus_tickets')
-    else: form = CadastroForm()
+    else:
+        form = CadastroForm()
     return render(request, 'tickets/registration/signup.html', {'form': form})
 
-# --- AJAX ---
+# ==============================================================================
+# 2. AJAX (CARREGAMENTO DINÂMICO)
+# ==============================================================================
+
 def load_subsetores(request):
     setor_id = request.GET.get('setor_destino')
     if setor_id:
@@ -32,30 +39,45 @@ def load_subsetores(request):
     return render(request, 'tickets/partials/dropdown_subsetores.html', {'subsetores': subsetores})
 
 def load_categorias(request):
-    subsetor_id = request.GET.get('subsetor') # Agora buscamos pelo ID do Subsetor
+    subsetor_id = request.GET.get('subsetor') 
     if subsetor_id:
         categorias = CategoriaConfig.objects.filter(subsetor_pertencente_id=subsetor_id).order_by('nome')
     else:
         categorias = CategoriaConfig.objects.none()
     return render(request, 'tickets/partials/dropdown_categorias.html', {'categorias': categorias})
 
-# --- DASHBOARD ---
+# ==============================================================================
+# 3. DASHBOARD E KPIs
+# ==============================================================================
+
 @login_required
 def dashboard_geral(request):
     periodo = request.GET.get('periodo', '30')
     setor_id = request.GET.get('setor', '')
     status_filter = request.GET.get('status', '')
-    try: dias = int(periodo)
-    except: dias = 30
+    
+    try: 
+        dias = int(periodo)
+    except: 
+        dias = 30
+        
     data_limite = timezone.now() - timedelta(days=dias)
     chamados = Chamado.objects.filter(data_abertura__gte=data_limite)
-    if setor_id: chamados = chamados.filter(setor_destino_cache_id=setor_id)
+    
+    if setor_id: 
+        chamados = chamados.filter(setor_destino_cache_id=setor_id)
+        
     if status_filter:
-        if status_filter == 'abertos': chamados = chamados.exclude(status__in=['Fechado', 'Declinado', 'Evitado', 'Cancelado'])
-        elif status_filter == 'fechados': chamados = chamados.filter(status__in=['Fechado', 'Declinado', 'Evitado', 'Cancelado'])
-        elif status_filter == 'flash': chamados = chamados.filter(flash=True)
+        if status_filter == 'abertos': 
+            chamados = chamados.exclude(status__in=['Fechado', 'Declinado', 'Evitado', 'Cancelado'])
+        elif status_filter == 'fechados': 
+            chamados = chamados.filter(status__in=['Fechado', 'Declinado', 'Evitado', 'Cancelado'])
+        elif status_filter == 'flash': 
+            chamados = chamados.filter(flash=True)
+            
     total = chamados.count()
     fechados_count = chamados.filter(status__in=['Fechado', 'Declinado', 'Evitado', 'Cancelado']).count()
+    
     context = {
         'kpis': {
             'total': total,
@@ -76,20 +98,29 @@ def dashboard_geral(request):
     }
     return render(request, 'tickets/dashboard.html', context)
 
-# --- CLIENTE ---
+# ==============================================================================
+# 4. ÁREA DO CLIENTE (SOLICITANTE)
+# ==============================================================================
+
 @login_required
 def abrir_chamado(request):
-    try: colaborador = request.user.colaborador
-    except: return redirect('signup')
+    try: 
+        colaborador = request.user.colaborador
+    except: 
+        return redirect('signup')
+        
     if request.method == 'POST':
         form = AbrirChamadoForm(request.POST, request.FILES)
         if form.is_valid():
             chamado = form.save(commit=False)
             chamado.solicitante = colaborador
+            
             if form.cleaned_data['tipo'] == 'Flash':
                 chamado.flash = True
                 chamado.impacto_solicitante = 10
+            
             chamado.save()
+            
             arquivos = request.FILES.getlist('arquivos')
             if arquivos:
                 caminhos = []
@@ -99,9 +130,11 @@ def abrir_chamado(request):
                     caminhos.append(fs.url(filename))
                 chamado.caminhos_anexos = {"anexos": caminhos}
                 chamado.save()
+                
             messages.success(request, f"Chamado #{chamado.id_chamado} criado!")
             return redirect('meus_tickets')
-    else: form = AbrirChamadoForm()
+    else:
+        form = AbrirChamadoForm()
     return render(request, 'tickets/abrir_chamado.html', {'form': form})
 
 @login_required
@@ -122,38 +155,63 @@ def ver_ticket(request, ticket_id):
 @login_required
 def cancelar_chamado(request, ticket_id):
     chamado = get_object_or_404(Chamado, id_chamado=ticket_id)
-    if chamado.solicitante != request.user.colaborador: return redirect('meus_tickets')
-    if not chamado.is_editable:
-        messages.error(request, "Prazo expirado.")
+    
+    if chamado.solicitante != request.user.colaborador: 
         return redirect('meus_tickets')
+        
+    if not chamado.is_editable:
+        messages.error(request, "Prazo expirado para cancelamento.")
+        return redirect('meus_tickets')
+        
     if request.method == 'POST':
         chamado.status = 'Cancelado'
         chamado.data_fechamento = timezone.now()
         chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[Sistema]: Cancelado em {timezone.now().strftime('%d/%m %H:%M')}."
         chamado.save()
         messages.success(request, "Chamado cancelado.")
+        
     return redirect('meus_tickets')
 
 @login_required
 def editar_chamado(request, ticket_id):
     chamado = get_object_or_404(Chamado, id_chamado=ticket_id)
-    if chamado.solicitante != request.user.colaborador: return redirect('meus_tickets')
-    if not chamado.is_editable:
-        messages.error(request, "Edição bloqueada.")
+    
+    if chamado.solicitante != request.user.colaborador:
         return redirect('meus_tickets')
+    
+    if not chamado.is_editable:
+        messages.error(request, "Este chamado já está em atendimento e não pode ser editado.")
+        return redirect('meus_tickets')
+
     if request.method == 'POST':
         form = EditarChamadoForm(request.POST, request.FILES, instance=chamado)
         if form.is_valid():
             ticket = form.save(commit=False)
-            ticket.status = 'Em fila'
-            ticket.responsavel_tecnico = None
+            
+            # --- Regras de Edição ---
+            ticket.status = 'Em fila' # Garante que volte para a fila
+            ticket.responsavel_tecnico = None # Remove técnico se houver
+            ticket.flag_editado = True # Marca que foi editado
+            
             ticket.save()
-            messages.info(request, "Chamado re-enviado.")
+            messages.info(request, "Alterações salvas. O chamado voltou para a fila com uma marcação de edição.")
             return redirect('meus_tickets')
-    else: form = EditarChamadoForm(instance=chamado)
+    else:
+        form = EditarChamadoForm(instance=chamado)
+    
     return render(request, 'tickets/editar_chamado.html', {'form': form, 'chamado': chamado})
 
-# --- RESOLUTOR ---
+@login_required
+def meu_perfil(request):
+    colab = request.user.colaborador
+    total_abertos = Chamado.objects.filter(solicitante=colab).count()
+    total_resolvidos = Chamado.objects.filter(responsavel_tecnico=colab, status='Fechado').count()
+    return render(request, 'tickets/perfil_usuario.html', {'colab': colab, 'stats': {'abertos': total_abertos, 'resolvidos': total_resolvidos}})    
+
+# ==============================================================================
+# 5. ÁREA DO RESOLUTOR (TÉCNICO)
+# ==============================================================================
+
 @login_required
 def area_resolutor(request):
     colab = request.user.colaborador
@@ -161,10 +219,13 @@ def area_resolutor(request):
     producao = Chamado.objects.filter(status='Em Produção', responsavel_tecnico=colab).order_by('sla_prazo')
     return render(request, 'tickets/area_resolutor.html', {'stats': {'fila': fila.count(), 'meus_prod': producao.count()}, 'fila': fila, 'producao': producao})
 
+
+
 @login_required
 def realizar_triagem(request, ticket_id):
     chamado = get_object_or_404(Chamado, id_chamado=ticket_id)
     setores = Setor.objects.all()
+    
     if request.method == 'POST':
         acao = request.POST.get('acao')
         colab = request.user.colaborador
@@ -180,7 +241,8 @@ def realizar_triagem(request, ticket_id):
             chamado.status = 'Em Produção'
             chamado.data_em_producao = timezone.now()
             
-            if sla_input: chamado.sla_prazo = datetime.strptime(sla_input, '%Y-%m-%dT%H:%M')
+            if sla_input: 
+                chamado.sla_prazo = datetime.strptime(sla_input, '%Y-%m-%dT%H:%M')
             else:
                 score = (chamado.impacto_solicitante + confianca + facilidade) / 3
                 horas = 48 if score < 5 else 24
@@ -213,49 +275,59 @@ def realizar_triagem(request, ticket_id):
     return render(request, 'tickets/triagem_ticket.html', {'chamado': chamado, 'setores': setores})
 
 @login_required
+@login_required
 def acao_workflow(request, ticket_id, acao):
     chamado = get_object_or_404(Chamado, id_chamado=ticket_id)
-    if chamado.responsavel_tecnico != request.user.colaborador:
-        messages.error(request, "Você não é o responsável.")
-        return redirect('ver_ticket', ticket_id=chamado.id_chamado)
-
-    if acao == 'pausar':
-        chamado.pausar_sla()
-        chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[STANDBY]: Aguardando cliente."
-        chamado.save()
-        messages.warning(request, "SLA Pausado.")
-
-    elif acao == 'retomar':
-        if request.method == 'POST':
-            nova_data = request.POST.get('novo_prazo')
-            if nova_data:
-                dt = datetime.strptime(nova_data, '%Y-%m-%dT%H:%M')
-                chamado.retomar_sla(novo_prazo=dt)
-                messages.success(request, "Retomado com novo prazo.")
-            else: messages.error(request, "Data obrigatória.")
-        else:
-            chamado.retomar_sla()
-            messages.success(request, "Retomado.")
     
+    # Segurança: Só o responsável pode mexer (ou um gestor)
+    if chamado.responsavel_tecnico != request.user.colaborador and not request.user.colaborador.is_manager:
+        messages.error(request, "Você não é o responsável técnico deste chamado.")
+        return redirect('area_resolutor')
+
+    # 1. PAUSAR (STAND BY)
+    if acao == 'pausar':
+        if chamado.status != 'Stand By':
+            chamado.pausar_sla() # Método do Model
+            chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[{timezone.now().strftime('%d/%m %H:%M')}] Status: Stand By (Aguardando Cliente/Terceiro)."
+            chamado.save()
+            messages.warning(request, f"Chamado #{chamado.id_chamado} pausado. O SLA parou de contar.")
+
+    # 2. RETOMAR (DE VOLTA PARA PRODUÇÃO)
+    elif acao == 'retomar':
+        if chamado.status == 'Stand By':
+            chamado.retomar_sla() # Método do Model (Recalcula SLA)
+            chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[{timezone.now().strftime('%d/%m %H:%M')}] Status: Em Produção (SLA Retomado)."
+            chamado.save()
+            messages.success(request, f"Chamado #{chamado.id_chamado} retomado! Novo prazo calculado.")
+
+    # 3. ENVIAR PARA HOMOLOGAÇÃO
     elif acao == 'homologar':
         chamado.status = 'Homologação'
-        chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[HOMOLOGAÇÃO]: Enviado para validação."
+        chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[{timezone.now().strftime('%d/%m %H:%M')}] Status: Homologação (Enviado para validação)."
         chamado.save()
-        messages.info(request, "Enviado para homologação.")
+        messages.info(request, "Enviado para homologação do solicitante.")
 
+    # 4. FECHAR CHAMADO
     elif acao == 'fechar':
         chamado.status = 'Fechado'
         chamado.data_fechamento = timezone.now()
+        chamado.descricao_resposta = f"{chamado.descricao_resposta or ''}\n[{timezone.now().strftime('%d/%m %H:%M')}] Status: Fechado (Concluído)."
         chamado.save()
-        messages.success(request, "Chamado concluído!")
+        messages.success(request, "Chamado encerrado com sucesso!")
 
-    return redirect('ver_ticket', ticket_id=chamado.id_chamado)
+    return redirect('area_resolutor')
 
-# --- GESTÃO E PERFIL ---
+# ==============================================================================
+# 6. PAINEL DE GESTÃO (MANAGER)
+# ==============================================================================
+
 @login_required
 def painel_gestor(request):
-    try: gestor = request.user.colaborador
-    except: return redirect('dashboard_geral')
+    try: 
+        gestor = request.user.colaborador
+    except: 
+        return redirect('dashboard_geral')
+        
     if not gestor.is_manager: 
         messages.error(request, "Acesso restrito.")
         return redirect('dashboard_geral')
@@ -280,14 +352,12 @@ def painel_gestor(request):
             if form_user.is_valid():
                 colab_salvo = form_user.save()
                 
-                # === REGRA DE OURO: SE É HEAD, TEM ACESSO A TUDO ===
+                # SE É HEAD, TEM ACESSO A TUDO
                 if colab_salvo.is_manager:
-                    # Busca todas as categorias do setor
                     todas_cats = CategoriaConfig.objects.filter(subsetor_pertencente__setor_pai=gestor.setor)
-                    # Atribui todas ao colaborador
                     colab_salvo.categorias_atribuidas.set(todas_cats)
                     colab_salvo.save()
-                    messages.success(request, f"Permissões de {colab_salvo.nome} atualizadas! (Como é Head, recebeu acesso total).")
+                    messages.success(request, f"Permissões de {colab_salvo.nome} atualizadas! (Head recebe acesso total).")
                 else:
                     messages.success(request, f"Permissões de {colab_salvo.nome} atualizadas!")
                 
@@ -300,12 +370,13 @@ def painel_gestor(request):
             if cat_pk:
                 cat = get_object_or_404(CategoriaConfig, id=cat_pk, subsetor_pertencente__setor_pai=gestor.setor)
                 form_cat = CategoriaForm(request.POST, instance=cat, setor_do_gestor=gestor.setor)
-            else: form_cat = CategoriaForm(request.POST, setor_do_gestor=gestor.setor)
+            else: 
+                form_cat = CategoriaForm(request.POST, setor_do_gestor=gestor.setor)
             
             if form_cat.is_valid():
                 cat_salva = form_cat.save()
                 
-                # Se criou categoria nova, já dá permissão para todos os Heads do setor
+                # Vincula aos Heads automaticamente
                 heads = Colaborador.objects.filter(setor=gestor.setor, is_manager=True)
                 for head in heads:
                     head.categorias_atribuidas.add(cat_salva)
@@ -337,37 +408,76 @@ def painel_gestor(request):
     })
 
 @login_required
-def meu_perfil(request):
-    colab = request.user.colaborador
-    total_abertos = Chamado.objects.filter(solicitante=colab).count()
-    total_resolvidos = Chamado.objects.filter(responsavel_tecnico=colab, status='Fechado').count()
-    return render(request, 'tickets/perfil_usuario.html', {'colab': colab, 'stats': {'abertos': total_abertos, 'resolvidos': total_resolvidos}})    
+def gerenciar_workflow(request, ticket_id):
+    if request.method != 'POST':
+        return redirect('area_resolutor')
 
-@login_required
-def editar_chamado(request, ticket_id):
     chamado = get_object_or_404(Chamado, id_chamado=ticket_id)
     
-    if chamado.solicitante != request.user.colaborador:
-        return redirect('meus_tickets')
-    
-    if not chamado.is_editable:
-        messages.error(request, "Este chamado já está em atendimento e não pode ser editado.")
-        return redirect('meus_tickets')
+    # Segurança
+    if chamado.responsavel_tecnico != request.user.colaborador and not request.user.colaborador.is_manager:
+        messages.error(request, "Você não é o responsável.")
+        return redirect('area_resolutor')
 
-    if request.method == 'POST':
-        form = EditarChamadoForm(request.POST, request.FILES, instance=chamado)
-        if form.is_valid():
-            ticket = form.save(commit=False)
-            
-            # --- Regras de Edição ---
-            ticket.status = 'Em fila' # Garante que volte para a fila
-            ticket.responsavel_tecnico = None # Remove técnico se houver (segurança)
-            ticket.flag_editado = True # MARCA QUE FOI EDITADO
-            
-            ticket.save()
-            messages.info(request, "Alterações salvas. O chamado voltou para a fila com uma marcação de edição.")
-            return redirect('meus_tickets')
-    else:
-        form = EditarChamadoForm(instance=chamado)
+    # Dados do Formulário
+    acao = request.POST.get('acao_escolhida')
+    justificativa = request.POST.get('justificativa', '').strip()
+    arquivo = request.FILES.get('arquivo_anexo')
     
-    return render(request, 'tickets/editar_chamado.html', {'form': form, 'chamado': chamado})
+    # Monta o texto de histórico
+    agora = timezone.now().strftime('%d/%m %H:%M')
+    texto_historico = f"\n[{agora}] Ação: {acao.upper()}"
+    if justificativa:
+        texto_historico += f" | Motivo: {justificativa}"
+
+    # Processamento do Arquivo (se houver)
+    if arquivo:
+        fs = FileSystemStorage()
+        filename = fs.save(f"anexos/{chamado.id_chamado}/{arquivo.name}", arquivo)
+        url_arquivo = fs.url(filename)
+        
+        # Atualiza o JSON de anexos
+        if not chamado.caminhos_anexos:
+            chamado.caminhos_anexos = {"anexos": []}
+        
+        # Garante que é uma lista antes de append
+        lista_anexos = chamado.caminhos_anexos.get('anexos', [])
+        lista_anexos.append(url_arquivo)
+        chamado.caminhos_anexos['anexos'] = lista_anexos
+        
+        texto_historico += f" | (Arquivo anexado: {arquivo.name})"
+
+    # Aplica a Lógica de Status
+    if acao == 'pausar':
+        if chamado.status != 'Stand By':
+            chamado.pausar_sla()
+            chamado.descricao_resposta = (chamado.descricao_resposta or '') + texto_historico
+            chamado.save()
+            messages.warning(request, f"Chamado #{ticket_id} pausado.")
+
+    elif acao == 'retomar':
+        chamado.retomar_sla()
+        chamado.descricao_resposta = (chamado.descricao_resposta or '') + texto_historico
+        chamado.save()
+        messages.success(request, f"Chamado #{ticket_id} retomado.")
+
+    elif acao == 'homologar':
+        chamado.status = 'Homologação'
+        chamado.descricao_resposta = (chamado.descricao_resposta or '') + texto_historico
+        chamado.save()
+        messages.info(request, "Enviado para homologação.")
+
+    elif acao == 'fechar':
+        chamado.status = 'Fechado'
+        chamado.data_fechamento = timezone.now()
+        chamado.descricao_resposta = (chamado.descricao_resposta or '') + texto_historico
+        chamado.save()
+        messages.success(request, "Chamado encerrado.")
+    
+    elif acao == 'voltar_producao': # Caso volte da homologação
+        chamado.retomar_sla() # Serve para voltar status para produção
+        chamado.descricao_resposta = (chamado.descricao_resposta or '') + texto_historico
+        chamado.save()
+        messages.info(request, "Chamado voltou para produção.")
+
+    return redirect('area_resolutor')

@@ -3,8 +3,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1">Histórico de Chamados</h2>
-        <p class="text-muted mb-0">Atividades finalizadas, canceladas ou recusadas.</p>
+        <h2 class="fw-bold mb-1">Histórico</h2>
+        <p class="text-muted mb-0">Arquivo de chamados finalizados ou cancelados.</p>
     </div>
 </div>
 
@@ -13,10 +13,10 @@
         <thead class="bg-light">
             <tr>
                 <th class="py-3 ps-4 text-uppercase small text-muted">ID</th>
-                <th class="py-3 text-uppercase small text-muted">Assunto</th>
+                <th class="py-3 text-uppercase small text-muted">Detalhes</th>
                 <th class="py-3 text-uppercase small text-muted">Status Final</th>
                 <th class="py-3 text-uppercase small text-muted">Conclusão</th>
-                <th class="text-end pe-4 py-3 text-uppercase small text-muted">Detalhes</th>
+                <th class="text-end pe-4 py-3 text-uppercase small text-muted">Ação</th>
             </tr>
         </thead>
         <tbody>
@@ -29,7 +29,7 @@
                 </td>
                 <td>
                     {% if c.status == 'Fechado' %}
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 rounded-pill">Concluído</span>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 rounded-pill">Resolvido</span>
                     {% elif c.status == 'Cancelado' %}
                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 rounded-pill">Cancelado</span>
                     {% elif c.status == 'Declinado' %}
@@ -42,16 +42,16 @@
                     {{ c.data_fechamento|date:"d/m/Y H:i" }}
                 </td>
                 <td class="text-end pe-4">
-                    <a href="{% url 'ver_ticket' c.id_chamado %}" class="btn btn-sm btn-white border text-primary">
-                        <i class="bi bi-eye"></i> Visualizar
+                    <a href="{% url 'ver_ticket' c.id_chamado %}" class="btn btn-sm btn-white border text-secondary shadow-sm">
+                        <i class="bi bi-eye"></i> Detalhes
                     </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
                 <td colspan="5" class="text-center py-5 text-muted">
-                    <i class="bi bi-folder2-open display-4 mb-2 d-block opacity-25"></i>
-                    Nenhum registro no histórico.
+                    <i class="bi bi-clock-history display-4 mb-2 d-block opacity-25"></i>
+                    Nenhum registro histórico encontrado.
                 </td>
             </tr>
             {% endfor %}

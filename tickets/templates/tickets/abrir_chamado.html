@@ -2,70 +2,75 @@
 {% block content %}
 
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card-custom p-4">
-            <h2 class="fw-bold mb-4">Abrir Novo Chamado</h2>
+    <div class="col-lg-9">
+        <div class="card-custom p-5">
+            
+            <div class="text-center mb-5">
+                <h1 class="h3 fw-bold mb-2">Novo Chamado</h1>
+                <p class="text-muted">Descreva sua solicitação para a equipe técnica.</p>
+            </div>
             
             <form method="post" enctype="multipart/form-data" id="chamadoForm">
                 {% csrf_token %}
                 
-                <div class="mb-3">
-                    <label class="fw-bold mb-1">1. Setor de Destino</label>
-                    {{ form.setor_destino }}
+                <div class="bg-light p-4 rounded-4 mb-4 border border-dashed">
+                    <h6 class="form-label mb-3 text-primary"><i class="bi bi-diagram-3-fill me-2"></i>Classificação</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">1. Setor Macro</label>
+                            {{ form.setor_destino }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">2. Área Específica</label>
+                            {{ form.subsetor }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">3. Categoria</label>
+                            {{ form.categoria }}
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="fw-bold mb-1">2. Área Específica</label>
-                    {{ form.subsetor }}
-                </div>
-
-                <div class="mb-3">
-                    <label class="fw-bold mb-1">3. Categoria do Serviço</label>
-                    {{ form.categoria }}
-                </div>
-
-                <hr class="my-4">
-
-                <div class="row">
-                    <div class="col-md-8 mb-3">
-                        <label class="fw-bold mb-1">Título do Assunto</label>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label">Título do Assunto</label>
                         {{ form.titulo }}
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="fw-bold mb-1">Prioridade</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Prioridade</label>
                         {{ form.tipo }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição Detalhada</label>
+                        {{ form.descricao }}
+                        <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Inclua mensagens de erro e passos para reproduzir.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Evidências / Anexos</label>
+                        {{ form.arquivos }}
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="fw-bold mb-1">Descrição Detalhada</label>
-                    {{ form.descricao }}
-                </div>
-
-                <div class="mb-3">
-                    <label class="fw-bold mb-1">Evidências / Anexos</label>
-                    {{ form.arquivos }}
-                </div>
-
-                <div class="mb-4 p-3 bg-light rounded border">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="fw-bold mb-0">Impacto no Trabalho</label>
-                        <span id="badgeImpacto" class="badge bg-warning text-dark fs-6">5 - Médio</span>
+                <div class="p-4 rounded-4 mb-5" style="background: linear-gradient(145deg, #ffffff, #f9fafb); border: 1px solid rgba(0,0,0,0.08);">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <label class="fw-bold mb-0 fs-5"><i class="bi bi-activity me-2"></i>Impacto no Trabalho</label>
+                        <span id="badgeImpacto" class="badge bg-dark text-white shadow-sm px-3 py-2">Calculando...</span>
                     </div>
                     
                     {{ form.impacto_solicitante }}
                     
-                    <div class="d-flex justify-content-between small text-muted mt-2">
-                        <span><i class="bi bi-emoji-smile"></i> Consigo trabalhar</span>
-                        <span><i class="bi bi-emoji-dizzy"></i> Trabalho Parado</span>
+                    <div class="d-flex justify-content-between small text-muted fw-bold mt-3 text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">
+                        <span><i class="bi bi-circle-fill text-success me-1"></i>Baixo</span>
+                        <span><i class="bi bi-circle-fill text-warning me-1"></i>Médio</span>
+                        <span><i class="bi bi-circle-fill text-danger me-1"></i>Crítico</span>
                     </div>
-                    <p id="descImpacto" class="text-center small text-muted mt-2 mb-0">
-                        O problema causa lentidão, mas há contorno.
-                    </p>
+                    <p id="descImpacto" class="text-center text-muted mt-3 mb-0 fst-italic small">--</p>
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary-4c btn-lg fw-bold">Abrir Chamado</button>
+                    <button type="submit" class="btn btn-primary-4c btn-lg py-3">
+                        <i class="bi bi-send-fill me-2"></i> Abrir Solicitação
+                    </button>
                 </div>
             </form>
         </div>
@@ -73,7 +78,7 @@
 </div>
 
 <script>
-    // --- LÓGICA DE CASCATA (AJAX) ---
+    // --- CASCADING DROPDOWNS (AJAX) ---
     const selectSetor = document.getElementById("id_setor_destino");
     const selectSubsetor = document.getElementById("id_subsetor");
     const selectCategoria = document.getElementById("id_categoria");
@@ -82,14 +87,13 @@
         const url = "{% url 'ajax_load_subsetores' %}"; 
         const setorId = this.value;
         selectSubsetor.innerHTML = '<option value="">Carregando...</option>';
-        selectCategoria.innerHTML = '<option value="">Aguardando subsetor...</option>';
-
-        if (setorId) {
+        
+        if(setorId) {
             fetch(`${url}?setor_destino=${setorId}`)
-                .then(response => response.text())
+                .then(res => res.text())
                 .then(html => {
                     selectSubsetor.innerHTML = html;
-                    selectCategoria.innerHTML = '<option value="">Selecione primeiro o subsetor...</option>';
+                    selectCategoria.innerHTML = '<option value="">Selecione primeiro a área...</option>';
                 });
         }
     });
@@ -98,68 +102,49 @@
         const url = "{% url 'ajax_load_categorias' %}"; 
         const subsetorId = this.value;
         selectCategoria.innerHTML = '<option value="">Carregando...</option>';
-
-        if (subsetorId) {
+        
+        if(subsetorId) {
             fetch(`${url}?subsetor=${subsetorId}`)
-                .then(response => response.text())
+                .then(res => res.text())
                 .then(html => selectCategoria.innerHTML = html);
         }
     });
 
-    // --- LÓGICA DO SLIDER DINÂMICO ---
-    const slider = document.getElementById('id_impacto_solicitante'); // ID padrão do Django
+    // --- SLIDER VISUAL ---
+    const slider = document.getElementById('id_impacto_solicitante');
     const badge = document.getElementById('badgeImpacto');
     const desc = document.getElementById('descImpacto');
 
     function updateSlider() {
         const val = parseInt(slider.value);
-        let texto = "";
-        let classe = "";
-        let descricao = "";
+        let texto = "", classe = "", descricao = "";
 
         if (val <= 3) {
-            texto = val + " - Baixo";
-            classe = "bg-success text-white";
-            descricao = "Impacto mínimo. Consigo realizar minhas tarefas normalmente.";
+            texto = val + " - BAIXO"; classe = "bg-success";
+            descricao = "Consigo trabalhar normalmente. Impacto mínimo.";
         } else if (val <= 6) {
-            texto = val + " - Médio";
-            classe = "bg-warning text-dark";
-            descricao = "O problema causa lentidão ou incômodo, mas há contorno.";
+            texto = val + " - MÉDIO"; classe = "bg-warning text-dark";
+            descricao = "O sistema está lento ou com erros, mas há contorno.";
         } else if (val <= 8) {
-            texto = val + " - Alto";
-            classe = "bg-orange text-white"; // Vamos definir css pra orange ou usar warning-subtle
-            descricao = "Trabalho muito prejudicado. Algumas funções vitais não funcionam.";
-            slider.classList.add('accent-danger');
+            texto = val + " - ALTO"; classe = "bg-warning border border-danger text-dark"; // Laranja custom
+            descricao = "Funções importantes não funcionam. Trabalho prejudicado.";
         } else {
-            texto = val + " - CRÍTICO";
-            classe = "bg-danger text-white";
-            descricao = "TOTALMENTE PARADO. Não consigo exercer minha função.";
+            texto = val + " - CRÍTICO"; classe = "bg-danger";
+            descricao = "PARADA TOTAL. Não consigo trabalhar.";
         }
-
-        badge.innerText = texto;
-        badge.className = "badge fs-6 " + classe;
+        badge.innerText = texto; badge.className = "badge shadow-sm px-3 py-2 " + classe;
         desc.innerText = descricao;
     }
-
-    // Escuta o movimento
     slider.addEventListener('input', updateSlider);
-    // Roda ao carregar a página
     updateSlider();
 
-    // Alerta Flash
+    // --- ALERT FLASH ---
     const selectTipo = document.getElementById('id_tipo');
     function toggleForm() {
         if(selectTipo.value === 'Flash') {
-            alert("⚠️ ATENÇÃO: Use FLASH apenas para paradas críticas totais. SLA de 1 hora.");
-            slider.value = 10; // Força impacto 10
-            updateSlider();
+            alert("⚠️ MODO FLASH: Use apenas para paradas críticas totais. O SLA é de 1 hora.");
+            slider.value = 10; updateSlider();
         }
     }
 </script>
-
-<style>
-    /* Estilo para deixar a cor laranja disponível */
-    .bg-orange { background-color: #fd7e14 !important; }
-</style>
-
 {% endblock %}

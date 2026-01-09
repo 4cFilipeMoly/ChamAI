@@ -1,218 +1,245 @@
 {% extends 'tickets/base.html' %}
+{% load static %}
+
 {% block content %}
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold mb-1">Painel do Gestor - {{ setor_gestor }}</h2>
-        <p class="text-muted mb-0">Gerencie sua equipe e catálogo de serviços.</p>
-    </div>
+<div class="container-fluid p-0">
     
-    {% if aba_ativa == 'categorias' %}
-    <a href="?nova_cat=true&aba=categorias" class="btn btn-primary-4c">
-        <i class="bi bi-plus-lg"></i> Nova Categoria
-    </a>
-    {% endif %}
-</div>
-
-<ul class="nav nav-pills mb-4 gap-2">
-    <li class="nav-item">
-        <a class="nav-link {% if aba_ativa == 'pessoas' %}active bg-dark{% else %}bg-white text-muted border{% endif %}" href="?aba=pessoas">
-            <i class="bi bi-people-fill me-2"></i>Minha Equipe
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if aba_ativa == 'categorias' %}active bg-dark{% else %}bg-white text-muted border{% endif %}" href="?aba=categorias">
-            <i class="bi bi-tags-fill me-2"></i>Catálogo de Categorias
-        </a>
-    </li>
-</ul>
-
-<div class="row g-4">
-    
-    {% if aba_ativa == 'pessoas' %}
-    
-    <div class="col-md-4">
-        <div class="card-custom h-100 p-0 overflow-hidden">
-            <div class="p-3 bg-light border-bottom">
-                <input type="text" id="buscaUser" class="form-control" placeholder="Buscar colaborador...">
-            </div>
-            <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
-                {% for c in colaboradores %}
-                <a href="?aba=pessoas&editar_user={{ c.id }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 {% if objeto_em_edicao.id == c.id %}active-item{% endif %}">
-                    <div class="avatar-small bg-light text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                        {{ c.nome|slice:":1" }}
-                    </div>
-                    <div>
-                        <div class="fw-bold text-dark">{{ c.nome }}</div>
-                        
-                        <div class="small text-muted">
-                            {% if c.is_manager %}
-                                <span class="text-primary fw-bold">
-                                    <i class="bi bi-star-fill" style="font-size: 0.8rem;"></i> Head / Gestão
-                                </span>
-                            {% elif c.subsetor %}
-                                {{ c.subsetor.nome }}
-                            {% else %}
-                                <span class="text-danger">Sem subsetor</span>
-                            {% endif %}
-                        </div>
-
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Painel de Gestão</h2>
+            <p class="text-muted mb-0">Gerencie sua equipe e as configurações do setor <span class="fw-bold text-dark">{{ setor_gestor }}</span>.</p>
         </div>
     </div>
 
-    <div class="col-md-8">
-        {% if form_user %}
-        <div class="card-custom p-4">
-            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.2rem;">
-                    {{ objeto_em_edicao.nome|slice:":1" }}
-                </div>
-                <div>
-                    <h5 class="fw-bold mb-0">Editando: {{ objeto_em_edicao.nome }}</h5>
-                    <div class="text-muted small">{{ objeto_em_edicao.user.email }}</div>
+    <ul class="nav nav-pills mb-4 gap-2">
+        <li class="nav-item">
+            <a class="nav-link {% if aba_ativa == 'pessoas' %}active bg-dark{% else %}bg-white text-muted border{% endif %}" 
+               href="?aba=pessoas">
+                <i class="bi bi-people-fill me-2"></i>Minha Equipe
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if aba_ativa == 'categorias' %}active bg-dark{% else %}bg-white text-muted border{% endif %}" 
+               href="?aba=categorias">
+                <i class="bi bi-tags-fill me-2"></i>Categorias & SLAs
+            </a>
+        </li>
+    </ul>
+
+    <div class="row g-4">
+        
+        {% if aba_ativa == 'pessoas' %}
+        
+            <div class="col-lg-8">
+                <div class="card card-custom h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold mb-0">Colaboradores do Setor</h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 text-muted small text-uppercase">Nome</th>
+                                    <th class="text-muted small text-uppercase">Subsetor</th>
+                                    <th class="text-muted small text-uppercase">Perfil</th>
+                                    <th class="text-end pe-4 text-muted small text-uppercase">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for colab in colaboradores %}
+                                <tr class="{% if objeto_em_edicao.id == colab.id %}table-active{% endif %}">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center fw-bold text-muted" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                {{ colab.nome|slice:":1" }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ colab.nome }}</div>
+                                                <div class="text-muted small" style="font-size: 0.75rem;">{{ colab.user.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if colab.subsetor %}
+                                            <span class="badge bg-light text-dark border">{{ colab.subsetor.nome }}</span>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if colab.is_manager %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">Gestor</span>
+                                        {% elif colab.is_resolutor %}
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Resolutor</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">Solicitante</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="?aba=pessoas&editar_user={{ colab.id }}" class="btn btn-sm btn-outline-dark">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center py-4 text-muted">Nenhum colaborador encontrado.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="tipo_acao" value="salvar_user">
-                <input type="hidden" name="user_id" value="{{ objeto_em_edicao.id }}">
-                
-                <div class="mb-4">
-                    <label class="fw-bold mb-2">Subsetor (Equipe)</label>
-                    {{ form_user.subsetor }}
-                    <div class="form-text">Define a qual sub-equipe este usuário pertence.</div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="fw-bold mb-2">Permissões de Atendimento</label>
-                    <div class="card bg-light border-0 p-3">
-                        <div class="row g-2" style="max-height: 300px; overflow-y: auto;">
-                            {% for checkbox in form_user.categorias_atribuidas %}
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    {{ checkbox.tag }}
-                                    <label class="form-check-label small" for="{{ checkbox.id_for_label }}">
-                                        {{ checkbox.choice_label }}
-                                    </label>
+            <div class="col-lg-4">
+                <div class="card card-custom border-0 shadow-sm sticky-top" style="top: 100px; z-index: 1;">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold mb-0">
+                            {% if objeto_em_edicao %}Editando: {{ objeto_em_edicao.nome }}{% else %}Detalhes{% endif %}
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if form_user %}
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tipo_acao" value="salvar_user">
+                                <input type="hidden" name="user_id" value="{{ objeto_em_edicao.id }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Subsetor</label>
+                                    {{ form_user.subsetor }}
+                                    <div class="form-text small">Define a fila principal de trabalho.</div>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Categorias Atribuídas</label>
+                                    <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                        {{ form_user.categorias_atribuidas }}
+                                    </div>
+                                    <div class="form-text small">Segure CTRL para selecionar várias.</div>
+                                </div>
+
+                                <div class="mb-4 form-check form-switch">
+                                    {{ form_user.is_manager }}
+                                    <label class="form-check-label" for="{{ form_user.is_manager.id_for_label }}">Acesso de Gestor (Head)</label>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary-4c">
+                                        <i class="bi bi-save"></i> Salvar Alterações
+                                    </button>
+                                    <a href="?aba=pessoas" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-arrow-left-circle fs-1 mb-2"></i>
+                                <p>Selecione um colaborador na lista ao lado para editar permissões.</p>
                             </div>
-                            {% empty %}
-                            <div class="text-muted small text-center w-100">Nenhuma categoria encontrada para este setor. Crie categorias na aba ao lado.</div>
-                            {% endfor %}
-                        </div>
+                        {% endif %}
                     </div>
-                    <div class="form-text">Marque o que este usuário tem capacidade técnica para resolver.</div>
                 </div>
+            </div>
 
-                <div class="d-flex gap-2 justify-content-end">
-                    <button type="submit" class="btn btn-primary-4c">Salvar Alterações</button>
+        {% elif aba_ativa == 'categorias' %}
+        
+            <div class="col-lg-8">
+                <div class="card card-custom h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0">Categorias de Chamado</h6>
+                        <a href="?aba=categorias&nova_cat=1" class="btn btn-sm btn-primary-4c">
+                            <i class="bi bi-plus-lg"></i> Nova Categoria
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 text-muted small text-uppercase">Nome</th>
+                                    <th class="text-muted small text-uppercase">Subsetor</th>
+                                    <th class="text-muted small text-uppercase">SLA Padrão</th>
+                                    <th class="text-end pe-4 text-muted small text-uppercase">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in categorias %}
+                                <tr class="{% if objeto_em_edicao.id == cat.id %}table-active{% endif %}">
+                                    <td class="ps-4 fw-medium text-dark">{{ cat.nome }}</td>
+                                    <td class="text-muted small">{{ cat.subsetor_pertencente.nome }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-clock"></i> {{ cat.sla_padrao_horas }}h
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="?aba=categorias&editar_cat={{ cat.id }}" class="btn btn-sm btn-outline-dark">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center py-4 text-muted">Nenhuma categoria cadastrada neste setor.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </form>
-        </div>
-        {% else %}
-        <div class="card-custom h-100 d-flex flex-column align-items-center justify-content-center text-center p-5 text-muted">
-            <i class="bi bi-hand-index-thumb display-4 mb-3 opacity-25"></i>
-            <h4>Selecione um Colaborador</h4>
-            <p class="text-muted">Clique na lista ao lado para gerenciar permissões.</p>
-        </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-custom border-0 shadow-sm sticky-top" style="top: 100px; z-index: 1;">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h6 class="fw-bold mb-0">
+                            {% if objeto_em_edicao %}Editar Categoria{% else %}Nova Categoria{% endif %}
+                        </h6>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if form_cat %}
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tipo_acao" value="salvar_cat">
+                                {% if objeto_em_edicao %}
+                                    <input type="hidden" name="cat_id" value="{{ objeto_em_edicao.id }}">
+                                {% endif %}
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Nome da Categoria</label>
+                                    {{ form_cat.nome }}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Subsetor</label>
+                                    {{ form_cat.subsetor_pertencente }}
+                                    <div class="form-text small">Vinculado ao setor {{ setor_gestor }}</div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold text-muted">SLA Padrão</label>
+                                    <div class="input-group">
+                                        {{ form_cat.sla_padrao_horas }}
+                                        <span class="input-group-text bg-light text-muted">Horas</span>
+                                    </div>
+                                    <div class="form-text small">Tempo limite para resolução.</div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary-4c">
+                                        <i class="bi bi-save"></i> Salvar
+                                    </button>
+                                    <a href="?aba=categorias" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-grid fs-1 mb-2"></i>
+                                <p>Selecione uma categoria ou clique em "Nova Categoria".</p>
+                                <a href="?aba=categorias&nova_cat=1" class="btn btn-sm btn-outline-primary mt-2">Criar Nova</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
         {% endif %}
     </div>
-
-    {% elif aba_ativa == 'categorias' %}
-    
-    <div class="col-md-4">
-        <div class="card-custom h-100 p-0 overflow-hidden">
-            <div class="p-3 bg-light border-bottom">
-                <input type="text" id="buscaCat" class="form-control" placeholder="Buscar categoria...">
-            </div>
-            <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
-                {% for c in categorias %}
-                <a href="?aba=categorias&editar_cat={{ c.id }}" class="list-group-item list-group-item-action py-3 {% if objeto_em_edicao.id == c.id %}active-item{% endif %}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-dark">{{ c.nome }}</span>
-                        <span class="badge bg-light text-secondary border">{{ c.subsetor_pertencente.nome }}</span>
-                    </div>
-                    <div class="small text-muted mt-1">SLA: {{ c.sla_padrao_horas }}h</div>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-8">
-        {% if form_cat %}
-        <div class="card-custom p-4">
-            <h5 class="fw-bold mb-4 border-bottom pb-3">
-                {% if objeto_em_edicao %}Editando Categoria{% else %}Nova Categoria{% endif %}
-            </h5>
-
-            <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="tipo_acao" value="salvar_cat">
-                {% if objeto_em_edicao %}
-                <input type="hidden" name="cat_id" value="{{ objeto_em_edicao.id }}">
-                {% endif %}
-
-                <div class="mb-3">
-                    <label class="fw-bold mb-2">Nome da Categoria</label>
-                    {{ form_cat.nome }}
-                </div>
-
-                <div class="mb-3">
-                    <label class="fw-bold mb-2">Subsetor Responsável</label>
-                    {{ form_cat.subsetor_pertencente }}
-                    <div class="form-text">Qual equipe técnica resolve isso?</div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="fw-bold mb-2">SLA Padrão (Horas)</label>
-                    {{ form_cat.sla_padrao_horas }}
-                </div>
-
-                <div class="d-flex gap-2 justify-content-end">
-                    <a href="?aba=categorias" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-primary-4c">Salvar Categoria</button>
-                </div>
-            </form>
-        </div>
-        {% else %}
-        <div class="card-custom h-100 d-flex flex-column align-items-center justify-content-center text-center p-5 text-muted">
-            <i class="bi bi-tags display-4 mb-3 opacity-25"></i>
-            <h4>Selecione ou Crie uma Categoria</h4>
-            <p>Organize os serviços que sua equipe oferece.</p>
-            <a href="?nova_cat=true&aba=categorias" class="btn btn-outline-primary mt-3">Criar Nova</a>
-        </div>
-        {% endif %}
-    </div>
-
-    {% endif %}
 </div>
-
-<style>
-    .active-item { background-color: var(--primary-soft) !important; border-left: 4px solid var(--primary-color); }
-</style>
-
-<script>
-    // Filtros de busca simples
-    const setupSearch = (inputId, listClass) => {
-        const input = document.getElementById(inputId);
-        if(input){
-            input.addEventListener('keyup', function() {
-                let val = this.value.toLowerCase();
-                let items = document.querySelectorAll('.list-group-item');
-                items.forEach(item => {
-                    let text = item.innerText.toLowerCase();
-                    item.style.display = text.includes(val) ? 'block' : 'none';
-                });
-            });
-        }
-    }
-    setupSearch('buscaUser');
-    setupSearch('buscaCat');
-</script>
 {% endblock %}

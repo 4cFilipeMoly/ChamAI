@@ -329,7 +329,10 @@ class Command(BaseCommand):
                 
                 # 3. Itera sobre Categorias
                 for cat_tupla in lista_categorias:
-                    nome_cat = cat_tupla[24]
+                    # --- CORREÇÃO AQUI ---
+                    # Antes estava cat_tupla[24], o que causava erro de índice.
+                    # O correto é índice 0 para o nome e 1 para o SLA.
+                    nome_cat = cat_tupla[0] 
                     sla = cat_tupla[1]
                     
                     obj, cat_created = CategoriaConfig.objects.update_or_create(

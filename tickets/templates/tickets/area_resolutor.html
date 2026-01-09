@@ -1,32 +1,34 @@
 {% extends 'tickets/base.html' %}
+{% load static %}
+
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1">Área do Resolutor</h2>
-        <p class="text-muted">Gerencie a fila de atendimento do setor <strong>{{ request.user.colaborador.setor.nome }}</strong>.</p>
+        <p class="text-muted">Fila de atendimento: <strong>{{ request.user.colaborador.setor.nome }}</strong></p>
     </div>
     <div class="d-flex gap-3 text-center">
-        <div class="bg-white p-2 rounded border">
-            <span class="d-block fw-bold fs-4">{{ stats.fila }}</span>
-            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Na Fila</small>
+        <div class="bg-white p-2 px-3 rounded-4 border shadow-sm">
+            <span class="d-block fw-bold fs-4 text-dark">{{ stats.fila }}</span>
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Na Fila</small>
         </div>
-        <div class="bg-white p-2 rounded border">
+        <div class="bg-white p-2 px-3 rounded-4 border shadow-sm">
             <span class="d-block fw-bold fs-4 text-primary">{{ stats.meus_prod }}</span>
-            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Em Produção</small>
+            <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Meus</small>
         </div>
     </div>
 </div>
 
-<ul class="nav nav-tabs mb-4" id="resolutorTabs" role="tablist">
+<ul class="nav nav-pills mb-4 gap-2" id="resolutorTabs" role="tablist">
     <li class="nav-item">
-        <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#fila">
-            <i class="bi bi-inbox-fill me-2"></i>Triagem Pendente
+        <button class="nav-link active fw-bold border" data-bs-toggle="tab" data-bs-target="#fila">
+            <i class="bi bi-inbox me-2"></i>Triagem Pendente
         </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#producao">
-            <i class="bi bi-tools me-2"></i>Em Atendimento (Meus)
+        <button class="nav-link fw-bold border" data-bs-toggle="tab" data-bs-target="#producao">
+            <i class="bi bi-tools me-2"></i>Meus Atendimentos
         </button>
     </li>
 </ul>
@@ -34,7 +36,7 @@
 <div class="tab-content">
     
     <div class="tab-pane fade show active" id="fila">
-        <div class="card-custom p-0 overflow-hidden">
+        <div class="card-custom p-0 overflow-hidden shadow-sm border-0">
             {% if fila %}
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -50,57 +52,82 @@
                     </thead>
                     <tbody>
                         {% for t in fila %}
-                        <tr class="{% if t.flag_editado %}bg-warning bg-opacity-10{% endif %}">
+                        <tr>
                             <td class="px-4 fw-bold text-muted">#{{ t.id_chamado }}</td>
                             <td>
-                                {% if t.flash %}
-                                    <span class="badge bg-danger"><i class="bi bi-lightning-fill"></i> FLASH</span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark border">Normal</span>
-                                {% endif %}
-                                
-                                {% if t.flag_editado %}
-                                    <span class="badge bg-warning text-dark ms-1" title="Solicitante alterou o chamado recentemente">
-                                        <i class="bi bi-pencil-fill"></i> Editado
-                                    </span>
-                                {% endif %}
+                                {% if t.flash %}<span class="badge bg-danger rounded-pill">FLASH</span>{% else %}<span class="badge bg-light text-dark border rounded-pill">Normal</span>{% endif %}
                             </td>
                             <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    {% if t.categoria in request.user.colaborador.categorias_atribuidas.all %}
-                                        <i class="bi bi-bullseye text-primary" title="Sua Especialidade (Match de Categoria)" style="font-size: 1.2rem;"></i>
-                                    {% endif %}
-                                    
-                                    <div>
-                                        <span class="d-block fw-bold text-dark">{{ t.categoria.nome|default:"-- Sem Categoria --" }}</span>
-                                        <small class="text-muted">{{ t.titulo|truncatechars:40 }}</small>
-                                    </div>
-                                </div>
+                                <span class="d-block fw-bold text-dark">{{ t.categoria.nome|default:"--" }}</span>
+                                <small class="text-muted">{{ t.titulo|truncatechars:40 }}</small>
                             </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="avatar-small bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                        {{ t.solicitante.nome|slice:":2" }}
-                                    </div>
-                                    <span class="small">{{ t.solicitante.nome }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% if t.estourou_primeira_resposta %}
-                                    <span class="text-danger fw-bold small">
-                                        <i class="bi bi-exclamation-circle-fill"></i> Atrasado
-                                    </span>
-                                {% else %}
-                                    <span class="text-success small">
-                                        {{ t.prazo_resposta_inicial|date:"H:i" }}
-                                    </span>
-                                {% endif %}
-                                <div class="text-muted" style="font-size: 0.7rem;">{{ t.prazo_resposta_inicial|date:"d/m/Y" }}</div>
-                            </td>
+                            <td><span class="small">{{ t.solicitante.nome }}</span></td>
+                            <td><span class="text-success small fw-bold">{{ t.prazo_resposta_inicial|date:"H:i" }}</span></td>
                             <td class="text-end px-4">
-                                <a href="{% url 'triagem_ticket' t.id_chamado %}" class="btn btn-sm btn-primary-4c fw-bold">
-                                    Triar <i class="bi bi-arrow-right"></i>
-                                </a>
+                                <a href="{% url 'realizar_triagem' t.id_chamado %}" class="btn btn-sm btn-primary-4c fw-bold px-3">Triar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center text-muted"><h5>Fila zerada!</h5></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="producao">
+        <div class="card card-custom border-0 shadow-sm overflow-hidden">
+            {% if producao %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light small text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-4">ID / Status</th>
+                            <th>Assunto</th>
+                            <th>Prazo SLA</th>
+                            <th class="text-end pe-4">Gerenciamento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in producao %}
+                        <tr class="{% if ticket.status == 'Stand By' %}table-warning bg-opacity-10{% elif ticket.status == 'Homologação' %}table-info bg-opacity-10{% endif %}">
+                            <td class="ps-4">
+                                <span class="fw-bold d-block text-dark">#{{ ticket.id_chamado }}</span>
+                                {% if ticket.status == 'Stand By' %}
+                                    <span class="badge bg-warning text-dark border border-warning rounded-pill">Pausado</span>
+                                {% elif ticket.status == 'Homologação' %}
+                                    <span class="badge bg-info text-dark border border-info rounded-pill">Validando</span>
+                                {% else %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">Produção</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'ver_ticket' ticket.id_chamado %}" class="fw-bold text-dark text-decoration-none">{{ ticket.titulo }}</a>
+                                <div class="small text-muted">{{ ticket.categoria.nome }}</div>
+                            </td>
+                            <td>
+                                {% if ticket.status == 'Stand By' %}
+                                    <span class="fw-bold text-warning">--:--</span>
+                                {% else %}
+                                    <span class="fw-bold {% if ticket.esta_vencido %}text-danger{% else %}text-success{% endif %}">
+                                        {{ ticket.sla_prazo|date:"d/m H:i" }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{% url 'ver_ticket' ticket.id_chamado %}" class="btn btn-sm btn-light border" title="Ver Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    <button type="button" 
+                                            class="btn btn-sm btn-dark px-3" 
+                                            onclick="abrirModalGerenciar('{{ ticket.id_chamado }}', '{{ ticket.titulo|escapejs }}', '{{ ticket.status }}')">
+                                        <i class="bi bi-sliders me-1"></i> Gerenciar
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -109,52 +136,140 @@
             </div>
             {% else %}
             <div class="p-5 text-center text-muted">
-                <i class="bi bi-check2-circle display-4 mb-3 opacity-25"></i>
-                <h5>Fila zerada!</h5>
-                <p>Nenhum chamado pendente para seu setor no momento.</p>
+                <h5>Você não tem chamados em andamento.</h5>
             </div>
             {% endif %}
         </div>
     </div>
+</div>
 
-    <div class="tab-pane fade" id="producao">
-        <div class="row g-3">
-            {% for t in producao %}
-            <div class="col-md-6 col-lg-4">
-                <div class="card-custom p-3 h-100 border-start border-4 {% if t.esta_vencido %}border-danger{% elif t.status == 'Stand By' %}border-warning{% else %}border-primary{% endif %}">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="badge bg-light text-dark border">#{{ t.id_chamado }}</span>
-                        
-                        {% if t.status == 'Stand By' %}
-                            <span class="badge bg-warning text-dark"><i class="bi bi-pause-circle"></i> Pausado</span>
-                        {% elif t.esta_vencido %}
-                            <span class="badge bg-danger"><i class="bi bi-alarm"></i> Vencido</span>
-                        {% else %}
-                            <span class="badge bg-success"><i class="bi bi-clock"></i> No Prazo</span>
-                        {% endif %}
-                    </div>
-                    
-                    <h6 class="fw-bold text-truncate mb-1" title="{{ t.titulo }}">{{ t.titulo }}</h6>
-                    <small class="text-muted d-block mb-3">{{ t.categoria.nome }}</small>
-                    
-                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                        <div class="small">
-                            <span class="text-muted d-block" style="font-size: 0.7rem;">Prazo SLA</span>
-                            <strong>{{ t.sla_prazo|date:"d/m H:i" }}</strong>
-                        </div>
-                        <a href="{% url 'ver_ticket' t.id_chamado %}" class="btn btn-sm btn-outline-primary">
-                            Acessar
-                        </a>
-                    </div>
+<div class="modal fade" id="modalGerenciar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="formGerenciar" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fs-6">
+                        Gerenciar Chamado <span id="modalTicketId" class="fw-bold text-warning"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-            </div>
-            {% empty %}
-            <div class="col-12 text-center py-5 text-muted">
-                <p>Você não tem chamados em andamento.</p>
-            </div>
-            {% endfor %}
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3" id="modalTicketTitulo"></p>
+                    
+                    <h6 class="fw-bold text-dark mb-3">Selecione uma Ação:</h6>
+                    
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        <div class="form-check p-3 border rounded bg-light" id="optPausar">
+                            <input class="form-check-input" type="radio" name="acao_escolhida" value="pausar" id="radioPausar">
+                            <label class="form-check-label w-100 fw-medium" for="radioPausar">
+                                <i class="bi bi-pause-circle-fill text-warning me-2"></i> Pausar SLA (Stand By)
+                                <div class="small text-muted fw-normal ms-4">Para quando aguardar resposta do cliente.</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check p-3 border rounded bg-light" id="optRetomar">
+                            <input class="form-check-input" type="radio" name="acao_escolhida" value="retomar" id="radioRetomar">
+                            <label class="form-check-label w-100 fw-medium" for="radioRetomar">
+                                <i class="bi bi-play-circle-fill text-primary me-2"></i> Retomar Produção
+                                <div class="small text-muted fw-normal ms-4">O SLA volta a contar de onde parou.</div>
+                            </label>
+                        </div>
+
+                         <div class="form-check p-3 border rounded bg-light" id="optVoltarProd">
+                            <input class="form-check-input" type="radio" name="acao_escolhida" value="voltar_producao" id="radioVoltarProd">
+                            <label class="form-check-label w-100 fw-medium" for="radioVoltarProd">
+                                <i class="bi bi-arrow-counterclockwise text-secondary me-2"></i> Retornar para Produção
+                                <div class="small text-muted fw-normal ms-4">Caso o chamado tenha sido reprovado.</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check p-3 border rounded bg-light" id="optHomologar">
+                            <input class="form-check-input" type="radio" name="acao_escolhida" value="homologar" id="radioHomologar">
+                            <label class="form-check-label w-100 fw-medium" for="radioHomologar">
+                                <i class="bi bi-check-circle-fill text-info me-2"></i> Enviar para Homologação
+                                <div class="small text-muted fw-normal ms-4">Solicita validação do cliente.</div>
+                            </label>
+                        </div>
+
+                        <div class="form-check p-3 border rounded bg-light" id="optFechar">
+                            <input class="form-check-input" type="radio" name="acao_escolhida" value="fechar" id="radioFechar">
+                            <label class="form-check-label w-100 fw-medium" for="radioFechar">
+                                <i class="bi bi-check-all text-success me-2"></i> Encerrar Chamado
+                                <div class="small text-muted fw-normal ms-4">Finaliza o atendimento definitivamente.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Justificativa / Comentário (Obrigatório)</label>
+                        <textarea class="form-control" name="justificativa" rows="3" required placeholder="Explique o motivo da alteração de status..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Anexar Arquivo (Opcional)</label>
+                        <input type="file" class="form-control" name="arquivo_anexo">
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary-4c">Confirmar Alteração</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 {% endblock %}
+
+{% block scripts %}
+<script>
+    function abrirModalGerenciar(id, titulo, statusAtual) {
+        // 1. Configura textos e Action do Form
+        document.getElementById('modalTicketId').innerText = '#' + id;
+        document.getElementById('modalTicketTitulo').innerText = titulo;
+        
+        // Define a URL de POST (Ajuste conforme sua URL pattern)
+        const form = document.getElementById('formGerenciar');
+        form.action = `/chamados/gerenciar-workflow/${id}/`; // Verifique se sua URL é essa mesmo
+
+        // 2. Controla Exibição das Opções baseado no Status
+        const optPausar = document.getElementById('optPausar');
+        const optRetomar = document.getElementById('optRetomar');
+        const optVoltarProd = document.getElementById('optVoltarProd');
+        const optHomologar = document.getElementById('optHomologar');
+        const optFechar = document.getElementById('optFechar');
+
+        // Reseta (esconde tudo)
+        optPausar.style.display = 'none';
+        optRetomar.style.display = 'none';
+        optVoltarProd.style.display = 'none';
+        optHomologar.style.display = 'none';
+        optFechar.style.display = 'none';
+        
+        // Limpa seleções anteriores
+        const radios = document.querySelectorAll('input[name="acao_escolhida"]');
+        radios.forEach(r => r.checked = false);
+
+        // Lógica de Estado
+        if (statusAtual === 'Em Produção') {
+            optPausar.style.display = 'block';
+            optHomologar.style.display = 'block';
+            optFechar.style.display = 'block';
+        } 
+        else if (statusAtual === 'Stand By') {
+            optRetomar.style.display = 'block';
+        }
+        else if (statusAtual === 'Homologação') {
+            optVoltarProd.style.display = 'block'; // Voltar para produção
+            optFechar.style.display = 'block';     // Fechar direto
+        }
+
+        // 3. Abre o Modal
+        new bootstrap.Modal(document.getElementById('modalGerenciar')).show();
+    }
+</script>
+{% endblock %}
+
+

@@ -3,38 +3,38 @@
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-custom p-4 mb-4 text-center">
-            <div class="d-flex justify-content-center mb-3">
-                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
-                     style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
+        <div class="card-custom p-5 mb-4 text-center">
+            <div class="d-flex justify-content-center mb-4">
+                <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center shadow-lg" 
+                     style="width: 100px; height: 100px; font-size: 2.5rem; font-weight: bold;">
                     {{ colab.nome|slice:":1" }}
                 </div>
             </div>
-            <h3 class="fw-bold mb-1">{{ colab.nome }}</h3>
-            <p class="text-muted">{{ colab.user.email }}</p>
+            <h2 class="fw-bold mb-1">{{ colab.nome }}</h2>
+            <p class="text-muted mb-4">{{ colab.user.email }}</p>
             
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <span class="badge bg-dark text-white px-3 py-2 rounded-pill">
-                    <i class="bi bi-building"></i> {{ colab.setor.nome }}
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm">
+                    <i class="bi bi-building me-1"></i> {{ colab.setor.nome }}
                 </span>
                 {% if colab.subsetor %}
-                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm">
                     {{ colab.subsetor.nome }}
                 </span>
                 {% endif %}
                 {% if colab.is_manager %}
-                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                    <i class="bi bi-star-fill"></i> Head
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm">
+                    <i class="bi bi-star-fill me-1"></i> Gestor
                 </span>
                 {% endif %}
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
+        <div class="row g-4">
             <div class="col-md-6">
                 <div class="card-custom p-4 h-100">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">Minha Atividade</h6>
-                    <div class="d-flex justify-content-between mb-2">
+                    <h6 class="fw-bold text-uppercase text-muted mb-4 small">Minha Atividade</h6>
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                         <span>Chamados Abertos</span>
                         <span class="fw-bold">{{ stats.abertos }}</span>
                     </div>
@@ -47,11 +47,11 @@
 
             <div class="col-md-6">
                 <div class="card-custom p-4 h-100">
-                    <h6 class="fw-bold text-uppercase text-muted mb-3">Minhas Atribuições</h6>
+                    <h6 class="fw-bold text-uppercase text-muted mb-4 small">Perfil Técnico</h6>
                     
                     {% if colab.is_resolutor %}
                         <div class="alert alert-info border-0 py-2 small mb-3">
-                            <i class="bi bi-info-circle me-1"></i> Você é um resolutor técnico.
+                            <i class="bi bi-info-circle me-1"></i> Você é um resolutor ativo.
                         </div>
                         <ul class="list-unstyled mb-0" style="max-height: 150px; overflow-y: auto;">
                             {% for cat in colab.categorias_atribuidas.all %}
@@ -62,10 +62,9 @@
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-person mb-2 d-block fs-4"></i>
-                            <p class="small mb-0">Você tem perfil de <strong>Solicitante</strong>.</p>
-                            <p class="small opacity-75">Não há categorias técnicas atribuídas a você.</p>
+                        <div class="text-center py-4 text-muted opacity-50">
+                            <i class="bi bi-person display-6 d-block mb-2"></i>
+                            <p class="small mb-0">Perfil apenas solicitante.</p>
                         </div>
                     {% endif %}
                 </div>

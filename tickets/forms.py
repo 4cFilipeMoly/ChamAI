@@ -134,16 +134,23 @@ class GestaoColaboradorForm(forms.ModelForm):
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = CategoriaConfig
+        # AQUI: Adicionamos o 'sla_padrao_horas' nos campos editáveis
         fields = ['nome', 'subsetor_pertencente', 'sla_padrao_horas']
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Formatação, Acesso VPN...'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Erro de Acesso'}),
             'subsetor_pertencente': forms.Select(attrs={'class': 'form-select'}),
-            'sla_padrao_horas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'sla_padrao_horas': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Horas'}),
         }
+        labels = {
+            'nome': 'Nome da Categoria',
+            'subsetor_pertencente': 'Subsetor',
+            'sla_padrao_horas': 'SLA Padrão (Horas)'
+        }
+
     def __init__(self, *args, **kwargs):
+        # Recebe o setor do gestor para filtrar apenas os subsetores dele
         setor_do_gestor = kwargs.pop('setor_do_gestor', None)
-        super().__init__(*args, **kwargs)
-        self.fields['subsetor_pertencente'].label = "Pertence a qual Subsetor?"
-        self.fields['sla_padrao_horas'].label = "SLA Padrão (Horas)"
+        super(CategoriaForm, self).__init__(*args, **kwargs)
+        
         if setor_do_gestor:
             self.fields['subsetor_pertencente'].queryset = Subsetor.objects.filter(setor_pai=setor_do_gestor)
